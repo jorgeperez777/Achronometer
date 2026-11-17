@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Vista contraída (la que suele verse en la pantalla de bloqueo). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/stopwatch_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.Compat.Notification.Info" />
+
+        <Chronometer
+            android:id="@+id/stopwatch_chrono"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFeatureSettings="tnum"
+            android:maxLines="1"
+            android:includeFontPadding="false"
+            android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
+            android:textSize="22sp" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/stopwatch_reset"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginEnd="10dp"
+        android:background="@drawable/bg_sw_gray"
+        android:contentDescription="Reiniciar"
+        android:padding="9dp"
+        android:src="@drawable/ic_sw_reset" />
+
+    <ImageView
+        android:id="@+id/stopwatch_toggle"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_sw_green"
+        android:contentDescription="Iniciar o pausar"
+        android:padding="8dp"
+        android:src="@drawable/ic_sw_play" />
+</LinearLayout>
