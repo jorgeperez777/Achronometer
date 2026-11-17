@@ -27,10 +27,14 @@ class StopwatchControlsModule : Module() {
     AsyncFunction("pause") { StopwatchStore.pause(context).toBundle() }
     AsyncFunction("reset") { StopwatchStore.reset(context, keepNotification = false).toBundle() }
 
-    /** Vuelve a publicar la notificación (p. ej. después de conceder el permiso). */
+    AsyncFunction("startRest") { StopwatchStore.startRest(context).toBundle() }
+    AsyncFunction("cancelRest") { StopwatchStore.cancelRest(context, keepNotification = false).toBundle() }
+    AsyncFunction("setRestDuration") { ms: Double -> StopwatchStore.setRestDuration(context, ms.toLong()).toBundle() }
+
+    /** Vuelve a publicar la notificación (p. ej. después de conceder el permiso o reiniciar el teléfono). */
     Function("refreshNotification") {
-      val s = StopwatchStore.get(context)
-      if (s.isRunning || s.elapsedMs() > 0) StopwatchNotification.show(context, s)
+      val s = StopwatchStore.clearExpiredRest(context)
+      if (s.hasContent()) StopwatchNotification.show(context, s)
     }
   }
 }

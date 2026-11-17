@@ -7,6 +7,17 @@ export function elapsedMs(s: StopwatchState, now = Date.now()) {
   return s.accumulatedMs + (s.isRunning ? Math.max(0, now - s.startedAt) : 0);
 }
 
+export function restRemainingMs(s: StopwatchState, now = Date.now()) {
+  return s.restEndsAt ? Math.max(0, s.restEndsAt - now) : 0;
+}
+
+/** Duraciones de descanso que ofrece la app. */
+export const REST_PRESETS_MS = [60_000, 90_000, 120_000, 180_000];
+const DEFAULT_REST_MS = 90_000;
+
+/** El temporizador de descanso solo está implementado en Android (de momento). */
+export const restSupported = typeof StopwatchControls.startRest === 'function';
+
 async function ensureAndroidNotificationPermission() {
   if (Platform.OS !== 'android' || Platform.Version < 33) return;
   const perm = PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS;
@@ -40,12 +51,15 @@ export function useStopwatch() {
     };
   }, []);
 
-  // Refresco de pantalla solo mientras corre.
+  // Nativo pone restEndsAt a 0 cuando salta la alarma de fin de descanso.
+  const resting = (state.restEndsAt ?? 0) > 0;
+
+  // Refresco de pantalla solo mientras corre el cronómetro (centésimas) o el descanso.
   useEffect(() => {
-    if (!state.isRunning) return;
-    const id = setInterval(() => setNow(Date.now()), 33);
+    if (!state.isRunning && !resting) return;
+    const id = setInterval(() => setNow(Date.now()), state.isRunning ? 33 : 200);
     return () => clearInterval(id);
-  }, [state.isRunning]);
+  }, [state.isRunning, resting]);
 
   const start = useCallback(async () => {
     await ensureAndroidNotificationPermission();
@@ -54,11 +68,32 @@ export function useStopwatch() {
   const pause = useCallback(async () => setState(await StopwatchControls.pause()), []);
   const reset = useCallback(async () => setState(await StopwatchControls.reset()), []);
 
+  const startRest = useCallback(async () => {
+    if (!StopwatchControls.startRest) return;
+    await ensureAndroidNotificationPermission();
+    setNow(Date.now());
+    setState(await StopwatchControls.startRest());
+  }, []);
+  const cancelRest = useCallback(async () => {
+    if (StopwatchControls.cancelRest) setState(await StopwatchControls.cancelRest());
+  }, []);
+  const setRestDuration = useCallback(async (ms: number) => {
+    if (StopwatchControls.setRestDuration) setState(await StopwatchControls.setRestDuration(ms));
+  }, []);
+
   return {
     isRunning: state.isRunning,
     elapsed: elapsedMs(state, state.isRunning ? now : undefined),
     start,
     pause,
     reset,
+    rest: {
+      supported: restSupported,
+      remaining: restRemainingMs(state, now),
+      durationMs: state.restDurationMs ?? DEFAULT_REST_MS,
+      start: startRest,
+      cancel: cancelRest,
+      setDuration: setRestDuration,
+    },
   };
 }

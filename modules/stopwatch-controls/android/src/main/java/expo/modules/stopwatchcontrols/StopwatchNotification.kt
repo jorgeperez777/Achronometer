@@ -51,7 +51,12 @@ object StopwatchNotification {
     val elapsed = state.elapsedMs()
     // Chronometer usa elapsedRealtime como base: base = ahora - transcurrido.
     val base = SystemClock.elapsedRealtime() - elapsed
+    val restRemaining = state.restRemainingMs()
+    val resting = restRemaining > 0
+    // Cuenta atrás: base = ahora + lo que queda.
+    val restBase = SystemClock.elapsedRealtime() + restRemaining
     val status = when {
+      resting -> "Descanso"
       state.isRunning -> "En marcha"
       elapsed > 0 -> "En pausa"
       else -> "Detenido"
@@ -59,6 +64,7 @@ object StopwatchNotification {
 
     val toggleIntent = actionIntent(context, StopwatchActionReceiver.ACTION_TOGGLE, 1)
     val resetIntent = actionIntent(context, StopwatchActionReceiver.ACTION_RESET, 2)
+    val restIntent = actionIntent(context, StopwatchActionReceiver.ACTION_REST, 4)
 
     // Los botones van dentro de la vista personalizada para que se vean
     // también con la notificación contraída (como suele mostrarse en la pantalla de bloqueo).
@@ -73,6 +79,18 @@ object StopwatchNotification {
 
       setViewVisibility(R.id.stopwatch_reset, if (state.isRunning || elapsed > 0) android.view.View.VISIBLE else android.view.View.GONE)
       setOnClickPendingIntent(R.id.stopwatch_reset, resetIntent)
+
+      // Descanso: cuenta atrás animada por el sistema + botón iniciar/cancelar.
+      setViewVisibility(R.id.stopwatch_rest, if (resting) android.view.View.VISIBLE else android.view.View.GONE)
+      setChronometer(R.id.stopwatch_rest, restBase, null, resting)
+      setChronometerCountDown(R.id.stopwatch_rest, true)
+      setImageViewResource(R.id.stopwatch_rest_button, if (resting) R.drawable.ic_sw_close else R.drawable.ic_sw_rest)
+      setInt(R.id.stopwatch_rest_button, "setBackgroundResource", if (resting) R.drawable.bg_sw_blue else R.drawable.bg_sw_blue_dim)
+      setContentDescription(
+        R.id.stopwatch_rest_button,
+        if (resting) "Cancelar descanso" else "Descanso de ${state.restDurationMs.toLong() / 1000} segundos",
+      )
+      setOnClickPendingIntent(R.id.stopwatch_rest_button, restIntent)
     }
 
     val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)?.let {

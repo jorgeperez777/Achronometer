@@ -9,6 +9,10 @@ declare class StopwatchControlsModule extends NativeModule<StopwatchControlsEven
   reset(): Promise<StopwatchState>;
   /** Solo Android. */
   refreshNotification?(): void;
+  /** Temporizador de descanso. Solo Android (de momento). */
+  startRest?(): Promise<StopwatchState>;
+  cancelRest?(): Promise<StopwatchState>;
+  setRestDuration?(ms: number): Promise<StopwatchState>;
 }
 
 export default requireNativeModule<StopwatchControlsModule>('StopwatchControls');

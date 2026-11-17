@@ -1,34 +1,10 @@
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { FixedDigits } from './src/FixedDigits';
+import { RestPanel } from './src/RestPanel';
 import { useStopwatch } from './src/useStopwatch';
 
-// Ancho de cada celda de dígito, en "em" (proporción del fontSize).
-const DIGIT_EM = 0.62;
-
-/**
- * Pinta cada dígito en una celda de ancho fijo para que el número no "tiemble".
- * `fontVariant: ['tabular-nums']` no basta: algunas fuentes de sistema (p. ej. la de Motorola)
- * no tienen dígitos tabulares y lo ignoran, así que el ancho cambiaba con cada dígito y la fila,
- * centrada, se desplazaba.
- */
-function FixedDigits({ text, style, fontSize }: { text: string; style: object; fontSize: number }) {
-  const { fontScale } = useWindowDimensions();
-  const width = fontSize * DIGIT_EM * fontScale;
-  return (
-    <View style={styles.digits} accessible accessibilityLabel={text}>
-      {text.split('').map((ch, i) => (
-        <Text
-          key={i}
-          style={[style, /\d/.test(ch) && { width, textAlign: 'center' }]}
-          importantForAccessibility="no"
-        >
-          {ch}
-        </Text>
-      ))}
-    </View>
-  );
-}
 
 function format(ms: number) {
   const totalCs = Math.floor(ms / 10);
@@ -45,7 +21,7 @@ function format(ms: number) {
 }
 
 export default function App() {
-  const { isRunning, elapsed, start, pause, reset } = useStopwatch();
+  const { isRunning, elapsed, start, pause, reset, rest } = useStopwatch();
   const { main, cs } = format(elapsed);
   const isIdle = !isRunning && elapsed === 0;
 
@@ -88,6 +64,8 @@ export default function App() {
           </Text>
         </Pressable>
       </View>
+
+      {rest.supported && <RestPanel {...rest} />}
     </View>
   );
 }
@@ -108,7 +86,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   timeRow: { flexDirection: 'row', alignItems: 'baseline' },
-  digits: { flexDirection: 'row', alignItems: 'baseline' },
   time: {
     color: '#fff',
     fontSize: 80,

@@ -37,13 +37,26 @@ Semántica de acciones:
 - `start` = iniciar o reanudar. `pause` = acumula y detiene. `toggle` = start/pause.
 - `reset` **desde la app** → 0 y **quita** la Live Activity/notificación.
 - `reset` **desde la pantalla de bloqueo** → 0 pero **mantiene** los controles visibles (con botón ▶) para poder volver a iniciar desde ahí.
+- `reset` también cancela el descanso en curso.
+
+### Temporizador de descanso (solo Android, de momento)
+
+Cuenta atrás entre series, **independiente** del cronómetro (se puede medir el entreno total y descansar a la vez).
+Estado nativo extra: `restEndsAt` (epoch ms, 0 = sin descanso) y `restDurationMs` (60/90/120/180 s; 90 por defecto).
+- Al iniciar se programa una alarma exacta (`AlarmManager.setExactAndAllowWhileIdle`) → `StopwatchActionReceiver` (`.REST_DONE`) → `finishRest` limpia el estado y publica el aviso "¡Descanso terminado!" (canal `rest_done`, `IMPORTANCE_HIGH`, vibración + sonido, id `4712`, se autodescarta a los 20 s).
+- Permisos: `USE_EXACT_ALARM` (Android 13+, concedido al instalar), `SCHEDULE_EXACT_ALARM` con `maxSdkVersion=32`; en Android ≤ 11 no hace falta. Sin permiso exacto se usa `setAndAllowWhileIdle`.
+- En la notificación: botón ⏳/✕ (`.REST`) y cuenta atrás azul (`Chronometer` con `setChronometerCountDown`).
+- ✕ desde la notificación mantiene la notificación; cancelar desde la app la quita si el cronómetro está a 0.
+- iOS: `startRest`/`cancelRest`/`setRestDuration` no existen en el módulo iOS; en TS son opcionales y `RestPanel` se oculta (`restSupported`).
 
 ### Mapa de archivos
 
 ```
 App.tsx                         UI (pantalla única, tema oscuro, centésimas)
+src/FixedDigits.tsx             Dígitos en celdas de ancho fijo (ver Gotcha 7)
+src/RestPanel.tsx               UI del descanso: duraciones, botón y cuenta atrás
 src/useStopwatch.ts             Hook: lee estado nativo, escucha 'onChange', refresca al volver a primer plano,
-                                pide POST_NOTIFICATIONS (Android 13+), llama refreshNotification al montar
+                                pide POST_NOTIFICATIONS (Android 13+), llama refreshNotification al montar; expone `rest`
 modules/stopwatch-controls/     Módulo Expo local (Expo Modules API), nombre nativo "StopwatchControls"
   index.ts, src/*.ts            API JS: getState(), start(), pause(), reset(), refreshNotification?() (solo Android), evento onChange
   ios/StopwatchEngine.swift     Motor iOS: estado en UserDefaults.standard + gestión de la Live Activity (ActivityKit)
@@ -51,10 +64,11 @@ modules/stopwatch-controls/     Módulo Expo local (Expo Modules API), nombre na
   ios/StopwatchControlsModule.swift   Puente a JS; reenvía NotificationCenter → evento onChange
   android/.../StopwatchStore.kt        Estado en SharedPreferences + listeners
   android/.../StopwatchNotification.kt Notificación (RemoteViews con Chronometer + botones)
-  android/.../StopwatchActionReceiver.kt BroadcastReceiver de los botones (funciona con la app cerrada)
+  android/.../StopwatchActionReceiver.kt BroadcastReceiver de los botones y de la alarma de descanso (funciona con la app cerrada)
+  android/.../RestTimer.kt             RestAlarm (AlarmManager) + RestDoneAlert (aviso de fin de descanso)
   android/.../StopwatchControlsModule.kt Puente a JS
   android/src/main/res/layout/stopwatch_notification{,_big}.xml  Vista contraída / expandida
-  android/src/main/res/drawable/       ic_sw_play/pause/reset, bg_sw_green/orange/gray, ic_stopwatch
+  android/src/main/res/drawable/       ic_sw_play/pause/reset/rest/close, bg_sw_green/orange/gray/blue/blue_dim, ic_stopwatch
 targets/widget/                 Widget Extension de iOS (apple-targets)
   expo-target.config.js         type widget, name StopwatchWidget, deploymentTarget 17.0
   StopwatchLiveActivity.swift   UI de la Live Activity + Dynamic Island + @main WidgetBundle
@@ -89,6 +103,8 @@ targets/widget/                 Widget Extension de iOS (apple-targets)
 4. Cualquier cambio en `app.json`, `expo-target.config.js` o código nativo (`modules/`, `targets/`) requiere prebuild + recompilar; Fast Refresh solo cubre JS.
 5. El podspec del módulo es solo iOS (se quitó tvOS) y enlaza `ActivityKit`. `expo-module.config.json` declara solo `apple` y `android` (se quitó web y el stub `.web.ts`).
 6. Requiere **CocoaPods ≥ 1.16.2** (apple-targets usa carpetas sincronizadas de Xcode 16). En esta máquina se actualizó a 1.17.0.
+7. **Dígitos que "tiemblan"**: la fuente de sistema de algunos Android (Motorola) ignora `fontVariant: ['tabular-nums']`; por eso los números grandes usan `FixedDigits` (cada dígito en una celda de ancho fijo). En la notificación los `Chronometer` llevan `fontFeatureSettings="tnum"` y ancho `match_parent`.
+8. **Fast Refresh en Android** a veces no aplica los cambios: si no se ven, cerrar y reabrir la app.
 
 ## Comandos
 
@@ -133,6 +149,8 @@ adb shell am start -a android.intent.action.VIEW \
 
 ## Ideas / pendientes
 
+- Descanso en iOS (Live Activity con `Text(timerInterval:countsDown:)` + notificación local al terminar).
+- Contador de series, botones más grandes, vibración al tocar.
 - Vueltas (laps).
 - Cambiar `slug` a `achro` si se quiere que el deep link deje de decir `cronometro`.
 - Icono propio de la app (sigue el del template de Expo).
