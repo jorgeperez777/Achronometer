@@ -91,6 +91,11 @@ export function useStopwatch() {
     if (StopwatchControls.setMode) setState(await StopwatchControls.setMode(m));
   }, []);
 
+  const startExercise = useCallback(async () => {
+    if (!StopwatchControls.startExercise) return;
+    await ensureAndroidNotificationPermission();
+    setState(await StopwatchControls.startExercise());
+  }, []);
   const completeSet = useCallback(async () => {
     if (!StopwatchControls.completeSet) return;
     await ensureAndroidNotificationPermission();
@@ -100,8 +105,8 @@ export function useStopwatch() {
   const undoSet = useCallback(async () => {
     if (StopwatchControls.undoSet) setState(await StopwatchControls.undoSet());
   }, []);
-  const nextExercise = useCallback(async () => {
-    if (StopwatchControls.nextExercise) setState(await StopwatchControls.nextExercise());
+  const endExercise = useCallback(async () => {
+    if (StopwatchControls.endExercise) setState(await StopwatchControls.endExercise());
   }, []);
   const setSetsTarget = useCallback(async (t: number) => {
     if (StopwatchControls.setSetsTarget) setState(await StopwatchControls.setSetsTarget(t));
@@ -121,12 +126,14 @@ export function useStopwatch() {
     setMode,
     series: {
       supported: typeof StopwatchControls.completeSet === 'function',
+      active: state.exerciseActive ?? false,
       done: state.sets ?? 0,
       target: state.setsTarget ?? DEFAULT_SETS_TARGET,
       restRemaining: restRemainingMs(state, now),
+      start: startExercise,
       complete: completeSet,
       undo: undoSet,
-      next: nextExercise,
+      end: endExercise,
       setTarget: setSetsTarget,
     },
     rest: {

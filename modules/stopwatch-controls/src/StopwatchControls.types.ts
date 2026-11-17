@@ -8,6 +8,8 @@ export type StopwatchState = {
   restEndsAt?: number;
   /** Duración elegida para los descansos. Solo Android (de momento). */
   restDurationMs?: number;
+  /** Hay un ejercicio en marcha en la pestaña Series (false = configurando). Solo Android. */
+  exerciseActive?: boolean;
   /** Series hechas del ejercicio actual. Solo Android (de momento). */
   sets?: number;
   /** Series objetivo del ejercicio. Solo Android (de momento). */

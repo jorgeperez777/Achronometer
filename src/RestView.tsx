@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { FixedDigits } from './FixedDigits';
 import { ModeLayout } from './ModeLayout';
+import { Segmented } from './Segmented';
 import { colors, pressedStyle, radius, space } from './theme';
 import { REST_PRESETS_MS } from './useStopwatch';
 
@@ -38,24 +39,15 @@ export function RestView({ remaining, durationMs, start, cancel, setDuration }: 
             fontSize={COUNTDOWN_SIZE}
           />
 
-          <View style={[styles.segmented, resting && styles.dimmed]} accessibilityRole="radiogroup">
-            {REST_PRESETS_MS.map((ms) => {
-              const selected = ms === durationMs;
-              return (
-                <Pressable
-                  key={ms}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected, disabled: resting }}
-                  accessibilityLabel={`${ms / 1000} segundos`}
-                  disabled={resting}
-                  hitSlop={{ top: 4, bottom: 4 }}
-                  onPress={() => setDuration(ms)}
-                  style={({ pressed }) => [styles.segment, selected && styles.segmentSelected, pressed && pressedStyle]}
-                >
-                  <Text style={[styles.segmentText, selected && styles.segmentTextSelected]}>{formatCountdown(ms)}</Text>
-                </Pressable>
-              );
-            })}
+          <View style={styles.selector}>
+            <Segmented
+              options={REST_PRESETS_MS}
+              value={durationMs}
+              onChange={setDuration}
+              label={formatCountdown}
+              a11yLabel={(ms) => `${ms / 1000} segundos`}
+              disabled={resting}
+            />
           </View>
         </>
       }
@@ -85,26 +77,7 @@ const styles = StyleSheet.create({
   },
   invisible: { opacity: 0 },
   countdown: { color: colors.text, fontSize: COUNTDOWN_SIZE, fontWeight: '200' },
-  segmented: {
-    flexDirection: 'row',
-    alignSelf: 'stretch',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: space.xs,
-    gap: space.xs,
-    marginTop: space.xl,
-  },
-  segment: {
-    flex: 1,
-    height: 40,
-    borderRadius: radius.md - space.xs,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  segmentSelected: { backgroundColor: colors.surfaceRaised },
-  segmentText: { color: colors.textMuted, fontSize: 16, fontVariant: ['tabular-nums'] },
-  segmentTextSelected: { color: colors.text, fontWeight: '600' },
-  dimmed: { opacity: 0.35 },
+  selector: { alignSelf: 'stretch', marginTop: space.xl },
   primary: {
     height: 64,
     borderRadius: radius.pill,

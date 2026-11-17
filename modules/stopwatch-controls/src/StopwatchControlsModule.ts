@@ -14,9 +14,10 @@ declare class StopwatchControlsModule extends NativeModule<StopwatchControlsEven
   cancelRest?(): Promise<StopwatchState>;
   setRestDuration?(ms: number): Promise<StopwatchState>;
   /** Series. Solo Android (de momento). */
+  startExercise?(): Promise<StopwatchState>;
   completeSet?(): Promise<StopwatchState>;
   undoSet?(): Promise<StopwatchState>;
-  nextExercise?(): Promise<StopwatchState>;
+  endExercise?(): Promise<StopwatchState>;
   setSetsTarget?(target: number): Promise<StopwatchState>;
   setMode?(mode: AppMode): Promise<StopwatchState>;
 }

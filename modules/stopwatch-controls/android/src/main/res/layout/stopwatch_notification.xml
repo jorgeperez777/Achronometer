@@ -49,6 +49,18 @@
             android:includeFontPadding="false"
             android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
             android:textSize="22sp" />
+
+        <!-- Progreso de series ("2/4") en lugar del cronómetro cuando este no se usa. -->
+        <TextView
+            android:id="@+id/stopwatch_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFeatureSettings="tnum"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
+            android:textSize="22sp"
+            android:visibility="gone" />
     </LinearLayout>
 
     <ImageView

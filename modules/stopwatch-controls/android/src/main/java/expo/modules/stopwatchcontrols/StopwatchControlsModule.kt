@@ -31,9 +31,10 @@ class StopwatchControlsModule : Module() {
     AsyncFunction("cancelRest") { StopwatchStore.cancelRest(context, keepNotification = false).toBundle() }
     AsyncFunction("setRestDuration") { ms: Double -> StopwatchStore.setRestDuration(context, ms.toLong()).toBundle() }
 
+    AsyncFunction("startExercise") { StopwatchStore.startExercise(context).toBundle() }
     AsyncFunction("completeSet") { StopwatchStore.completeSet(context).toBundle() }
     AsyncFunction("undoSet") { StopwatchStore.undoSet(context).toBundle() }
-    AsyncFunction("nextExercise") { StopwatchStore.nextExercise(context).toBundle() }
+    AsyncFunction("endExercise") { StopwatchStore.endExercise(context).toBundle() }
     AsyncFunction("setSetsTarget") { target: Int -> StopwatchStore.setSetsTarget(context, target).toBundle() }
     AsyncFunction("setMode") { mode: String ->
       val m = runCatching { Mode.valueOf(mode.uppercase()) }.getOrDefault(Mode.STOPWATCH)

@@ -41,11 +41,15 @@ Semántica de acciones:
 
 ### Series (solo Android, de momento)
 
-Pestaña propia. Estado nativo: `sets` (hechas), `setsTarget` (3–6, 4 por defecto; se recorta `sets` al leer) y `mode` (pestaña abierta: `stopwatch`/`rest`/`series`).
-- `completeSet` ("Serie hecha"): suma 1 y arranca el descanso; en la **última** no hay descanso: aviso "¡Ejercicio completado!" (`RestDoneAlert`) + vibración `DONE`. Con el ejercicio completo, `completeSet` = `nextExercise` (series a 0).
-- `undoSet` resta 1 y cancela el descanso que hubiera arrancado. `setSetsTarget` no baja de las ya hechas.
-- **El botón ⏳ de la notificación hace lo de la pestaña abierta** (`notificationRestButton`): en Series es ✓ (serie hecha) / ⏭ (siguiente ejercicio); en las demás, ⏳ (descanso). Durante un descanso siempre es ✕.
-- En modo Series la notificación se muestra siempre (`hasContent`), para poder llevar las series desde la pantalla de bloqueo desde la primera. Texto: "Serie N/M" (+ cuenta atrás) o "Completado M/M".
+Pestaña propia con **flujo guiado**, un solo botón principal por paso:
+1. **Configurar** (`exerciseActive=false`): series 3–6 y descanso entre series en la misma pantalla → "Empezar" (`startExercise`).
+2. **En serie** → "Terminé la serie" (`completeSet`: suma 1 y arranca el descanso). Enlaces: Deshacer serie, Terminar ejercicio (`endExercise` → vuelve a configurar).
+3. **Descansando** → "Empezar serie N ya" (`cancelRest`). Enlace: Deshacer serie (`undoSet`, cancela el descanso).
+4. **Completado** (tras la última serie no hay descanso; aviso "¡Ejercicio completado!" + vibración `DONE`) → "Siguiente ejercicio" (`startExercise`, misma configuración). Enlace: Cambiar series o descanso (`endExercise`).
+
+Estado nativo: `exerciseActive`, `sets`, `setsTarget` (se recorta `sets` al leer), `mode` (pestaña abierta). La duración del descanso es la misma que la de la pestaña Descanso.
+- **El botón azul de la notificación hace lo mismo que el botón principal** (`notificationRestButton`): ✕ si se descansa; con la pestaña Series abierta y ejercicio en marcha (`seriesControls`), ✓ / ⏭; si no, ⏳.
+- Con `seriesControls` la notificación se muestra siempre; si el cronómetro no se usa, la línea grande muestra el progreso ("2/3", `stopwatch_title`) en vez de 00:00.
 - Series, descanso y cronómetro son independientes: `reset` no toca las series.
 
 ### Temporizador de descanso (solo Android, de momento)
@@ -66,7 +70,8 @@ Estado nativo extra: `restEndsAt` (epoch ms, 0 = sin descanso) y `restDurationMs
 App.tsx                         Pantalla con tres modos (pestañas): Cronómetro, Descanso y Series; SafeAreaProvider.
                                 La pestaña abierta se guarda en nativo (`mode`). iOS (sin descanso): solo el cronómetro.
 src/ModeTabs.tsx                Pestañas; punto de color si otro modo sigue en marcha
-src/SeriesView.tsx              Modo series: puntos de progreso, "Serie N de M", objetivo 3–6, Deshacer / Serie hecha / Siguiente
+src/SeriesView.tsx              Modo series: flujo guiado configurar → en serie → descansando → completado
+src/Segmented.tsx               Selector segmentado compartido (series, duraciones)
 src/ModeLayout.tsx              Esqueleto común: número grande centrado + controles abajo a la misma altura en ambos modos
 src/StopwatchView.tsx           Modo cronómetro: tiempo con centésimas + Reiniciar / Iniciar·Pausar
 src/RestView.tsx                Modo descanso: duración que se convierte en cuenta atrás en el mismo sitio,

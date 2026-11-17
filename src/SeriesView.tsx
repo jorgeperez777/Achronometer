@@ -1,8 +1,10 @@
+import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { CONTROLS_HEIGHT, ModeLayout } from './ModeLayout';
+import { ModeLayout } from './ModeLayout';
+import { Segmented } from './Segmented';
 import { colors, pressedStyle, radius, space } from './theme';
-import { SETS_TARGET_OPTIONS } from './useStopwatch';
+import { REST_PRESETS_MS, SETS_TARGET_OPTIONS } from './useStopwatch';
 
 function formatCountdown(ms: number) {
   const total = Math.ceil(ms / 1000);
@@ -10,132 +12,190 @@ function formatCountdown(ms: number) {
 }
 
 type Props = {
+  active: boolean;
   done: number;
   target: number;
   restRemaining: number;
   restDurationMs: number;
+  start: () => void;
   complete: () => void;
   undo: () => void;
-  next: () => void;
+  end: () => void;
   skipRest: () => void;
   setTarget: (t: number) => void;
+  setRestDuration: (ms: number) => void;
 };
 
 /**
- * Modo series: en qué serie vas de cuántas. "Serie hecha" arranca el descanso (con la duración
- * elegida en la pestaña Descanso); tras la última avisa de que el ejercicio está completo.
- * Lo mismo se hace desde la notificación con el botón ✓ mientras esta pestaña esté abierta.
+ * Modo series como flujo guiado, con un solo botón principal por paso:
+ *   1. Configurar (series + descanso)  → "Empezar"
+ *   2. En serie                        → "Terminé la serie"   (arranca el descanso)
+ *   3. Descansando                     → "Empezar serie N ya" (salta el descanso)
+ *   4. Completado                      → "Siguiente ejercicio"
+ * El botón azul de la notificación hace lo mismo que el botón principal (✓ / ✕ / ⏭).
  */
-export function SeriesView({ done, target, restRemaining, restDurationMs, complete, undo, next, skipRest, setTarget }: Props) {
-  const resting = restRemaining > 0;
-  const completed = done >= target;
-  const current = Math.min(done + 1, target);
+export function SeriesView(p: Props) {
+  const resting = p.restRemaining > 0;
+  const completed = p.active && p.done >= p.target;
+  const next = p.done + 1;
 
-  const primary = resting
-    ? { label: 'Saltar descanso', a11y: 'Saltar descanso', onPress: skipRest, bg: colors.surfaceRaised, fg: colors.text }
-    : completed
-      ? { label: 'Siguiente', a11y: 'Siguiente ejercicio', onPress: next, bg: colors.startBg, fg: colors.start }
-      : { label: 'Serie hecha', a11y: `Serie ${current} hecha`, onPress: complete, bg: colors.rest, fg: colors.text };
+  if (!p.active) {
+    return (
+      <ModeLayout
+        display={
+          <>
+            <Text style={styles.title}>Nuevo ejercicio</Text>
+            <Text style={styles.hint}>Elige cuántas series vas a hacer y cuánto descansas entre ellas.</Text>
 
+            <Text style={[styles.label, styles.fieldLabel]}>Series</Text>
+            <Segmented
+              options={SETS_TARGET_OPTIONS}
+              value={p.target}
+              onChange={p.setTarget}
+              label={(t) => String(t)}
+              a11yLabel={(t) => `${t} series`}
+            />
+
+            <Text style={[styles.label, styles.fieldLabel]}>Descanso entre series</Text>
+            <Segmented
+              options={REST_PRESETS_MS}
+              value={p.restDurationMs}
+              onChange={p.setRestDuration}
+              label={formatCountdown}
+              a11yLabel={(ms) => `${ms / 1000} segundos`}
+            />
+          </>
+        }
+        controls={<Primary label="Empezar" a11y={`Empezar ejercicio de ${p.target} series`} onPress={p.start} />}
+      />
+    );
+  }
+
+  if (completed) {
+    return (
+      <ModeLayout
+        display={
+          <>
+            <Dots done={p.done} target={p.target} complete />
+            <Text style={[styles.title, styles.completeText]}>¡Ejercicio completado!</Text>
+            <Text style={styles.hint}>{p.target} series hechas</Text>
+            <Links>
+              <Link label="Cambiar series o descanso" onPress={p.end} />
+            </Links>
+          </>
+        }
+        controls={
+          <Primary
+            label="Siguiente ejercicio"
+            a11y={`Siguiente ejercicio: ${p.target} series, descanso ${formatCountdown(p.restDurationMs)}`}
+            onPress={p.start}
+            bg={colors.startBg}
+            fg={colors.start}
+          />
+        }
+      />
+    );
+  }
+
+  if (resting) {
+    return (
+      <ModeLayout
+        display={
+          <>
+            <Dots done={p.done} target={p.target} />
+            <Text style={[styles.label, { color: colors.rest }]}>Descanso</Text>
+            <Text style={[styles.huge, { color: colors.rest }]}>{formatCountdown(p.restRemaining)}</Text>
+            <Text style={styles.hint}>
+              Siguiente: serie {next} de {p.target}
+            </Text>
+            <Links>
+              <Link label="Deshacer serie" onPress={p.undo} />
+            </Links>
+          </>
+        }
+        controls={
+          <Primary
+            label={`Empezar serie ${next} ya`}
+            a11y={`Saltar descanso y empezar la serie ${next}`}
+            onPress={p.skipRest}
+            bg={colors.surfaceRaised}
+          />
+        }
+      />
+    );
+  }
+
+  // En serie.
   return (
     <ModeLayout
       display={
         <>
-          <View
-            style={styles.dots}
-            accessible
-            accessibilityLabel={`${done} de ${target} series hechas`}
-          >
-            {Array.from({ length: target }, (_, i) => (
-              <View key={i} style={[styles.dot, i < done && (completed ? styles.dotComplete : styles.dotDone)]} />
-            ))}
-          </View>
-
-          {completed ? (
-            <>
-              <Text style={[styles.big, styles.completeText]}>Completado</Text>
-              <Text style={styles.sub}>{target} de {target} series</Text>
-            </>
-          ) : (
-            <>
-              <Text style={styles.label}>Serie</Text>
-              <Text style={styles.huge}>{current}</Text>
-              <Text style={styles.sub}>de {target}</Text>
-            </>
-          )}
-
-          {/* Línea reservada: cuenta atrás si se descansa; si no, qué descanso viene después. */}
-          <Text style={[styles.restLine, resting && styles.restLineActive]}>
-            {resting
-              ? `Descanso ${formatCountdown(restRemaining)}`
-              : completed
-                ? ' '
-                : `Descanso tras la serie: ${formatCountdown(restDurationMs)}`}
+          <Dots done={p.done} target={p.target} />
+          <Text style={styles.label}>Serie</Text>
+          <Text style={styles.huge}>{next}</Text>
+          <Text style={styles.sub}>de {p.target}</Text>
+          <Text style={styles.hint}>Haz tu serie y pulsa el botón al terminar.</Text>
+          <Text style={styles.summary}>
+            {p.target} series · descanso {formatCountdown(p.restDurationMs)}
           </Text>
-
-          <Text style={[styles.label, styles.targetLabel]}>Objetivo</Text>
-          <View style={styles.segmented} accessibilityRole="radiogroup">
-            {SETS_TARGET_OPTIONS.map((t) => {
-              const selected = t === target;
-              const disabled = t < done; // no se puede bajar de las ya hechas
-              return (
-                <Pressable
-                  key={t}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected, disabled }}
-                  accessibilityLabel={`${t} series`}
-                  disabled={disabled}
-                  hitSlop={{ top: 4, bottom: 4 }}
-                  onPress={() => setTarget(t)}
-                  style={({ pressed }) => [
-                    styles.segment,
-                    selected && styles.segmentSelected,
-                    disabled && styles.dimmed,
-                    pressed && pressedStyle,
-                  ]}
-                >
-                  <Text style={[styles.segmentText, selected && styles.segmentTextSelected]}>{t}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <Links>
+            {p.done > 0 && <Link label="Deshacer serie" onPress={p.undo} />}
+            <Link label="Terminar ejercicio" onPress={p.end} />
+          </Links>
         </>
       }
-      controls={
-        <View style={styles.buttons}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Deshacer la última serie"
-            disabled={done === 0}
-            onPress={undo}
-            style={({ pressed }) => [styles.button, styles.secondary, done === 0 && styles.disabled, pressed && pressedStyle]}
-          >
-            <Text style={styles.secondaryText}>Deshacer</Text>
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={primary.a11y}
-            onPress={primary.onPress}
-            style={({ pressed }) => [styles.button, { backgroundColor: primary.bg }, pressed && pressedStyle]}
-          >
-            <Text style={[styles.primaryText, { color: primary.fg }]} numberOfLines={2}>
-              {primary.label}
-            </Text>
-          </Pressable>
-        </View>
-      }
+      controls={<Primary label="Terminé la serie" a11y={`Terminé la serie ${next}`} onPress={p.complete} />}
     />
+  );
+}
+
+function Dots({ done, target, complete }: { done: number; target: number; complete?: boolean }) {
+  return (
+    <View style={styles.dots} accessible accessibilityLabel={`${done} de ${target} series hechas`}>
+      {Array.from({ length: target }, (_, i) => (
+        <View key={i} style={[styles.dot, i < done && (complete ? styles.dotComplete : styles.dotDone)]} />
+      ))}
+    </View>
+  );
+}
+
+function Primary({ label, a11y, onPress, bg = colors.rest, fg = colors.text }: { label: string; a11y: string; onPress: () => void; bg?: string; fg?: string }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={a11y}
+      onPress={onPress}
+      style={({ pressed }) => [styles.primary, { backgroundColor: bg }, pressed && pressedStyle]}
+    >
+      <Text style={[styles.primaryText, { color: fg }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function Links({ children }: { children: ReactNode }) {
+  return <View style={styles.links}>{children}</View>;
+}
+
+function Link({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      hitSlop={8}
+      style={({ pressed }) => [styles.link, pressed && pressedStyle]}
+    >
+      <Text style={styles.linkText}>{label}</Text>
+    </Pressable>
   );
 }
 
 const DOT = 14;
 
 const styles = StyleSheet.create({
-  dots: { flexDirection: 'row', gap: 10, marginBottom: space.lg },
-  dot: { width: DOT, height: DOT, borderRadius: DOT / 2, borderWidth: 2, borderColor: '#48484A' },
-  dotDone: { backgroundColor: colors.rest, borderColor: colors.rest },
-  dotComplete: { backgroundColor: colors.start, borderColor: colors.start },
+  title: { color: colors.text, fontSize: 28, fontWeight: '600', textAlign: 'center' },
+  completeText: { color: colors.start },
+  hint: { color: colors.textMuted, fontSize: 16, textAlign: 'center', marginTop: space.sm, paddingHorizontal: space.lg },
   label: {
     color: colors.textMuted,
     fontSize: 13,
@@ -143,37 +203,17 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
-  huge: { color: colors.text, fontSize: 112, fontWeight: '200', lineHeight: 124, fontVariant: ['tabular-nums'] },
-  big: { fontSize: 44, fontWeight: '300', marginTop: space.lg },
-  completeText: { color: colors.start },
+  fieldLabel: { alignSelf: 'flex-start', marginTop: space.xl, marginBottom: space.sm },
+  huge: { color: colors.text, fontSize: 104, fontWeight: '200', lineHeight: 116, fontVariant: ['tabular-nums'] },
   sub: { color: colors.textMuted, fontSize: 18 },
-  restLine: { color: colors.textMuted, fontSize: 16, marginTop: space.md, fontVariant: ['tabular-nums'] },
-  restLineActive: { color: colors.rest, fontSize: 20, fontWeight: '600' },
-  targetLabel: { marginTop: space.xl, marginBottom: space.sm },
-  segmented: {
-    flexDirection: 'row',
-    alignSelf: 'stretch',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: space.xs,
-    gap: space.xs,
-  },
-  segment: { flex: 1, height: 40, borderRadius: radius.md - space.xs, alignItems: 'center', justifyContent: 'center' },
-  segmentSelected: { backgroundColor: colors.surfaceRaised },
-  segmentText: { color: colors.textMuted, fontSize: 16, fontVariant: ['tabular-nums'] },
-  segmentTextSelected: { color: colors.text, fontWeight: '600' },
-  dimmed: { opacity: 0.35 },
-  buttons: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: space.sm },
-  button: {
-    width: CONTROLS_HEIGHT,
-    height: CONTROLS_HEIGHT,
-    borderRadius: CONTROLS_HEIGHT / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: space.xs,
-  },
-  secondary: { backgroundColor: colors.surface },
-  disabled: { opacity: 0.4 },
-  secondaryText: { color: colors.text, fontSize: 16 },
-  primaryText: { fontSize: 15, fontWeight: '600', textAlign: 'center' },
+  summary: { color: colors.textMuted, fontSize: 14, marginTop: space.lg, fontVariant: ['tabular-nums'] },
+  dots: { flexDirection: 'row', gap: 10, marginBottom: space.lg },
+  dot: { width: DOT, height: DOT, borderRadius: DOT / 2, borderWidth: 2, borderColor: '#48484A' },
+  dotDone: { backgroundColor: colors.rest, borderColor: colors.rest },
+  dotComplete: { backgroundColor: colors.start, borderColor: colors.start },
+  links: { flexDirection: 'row', gap: space.lg, marginTop: space.lg },
+  link: { minHeight: 44, justifyContent: 'center', paddingHorizontal: space.xs },
+  linkText: { color: colors.rest, fontSize: 15 },
+  primary: { height: 64, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  primaryText: { fontSize: 18, fontWeight: '600' },
 });

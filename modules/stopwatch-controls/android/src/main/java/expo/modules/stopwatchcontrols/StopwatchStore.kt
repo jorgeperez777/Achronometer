@@ -17,6 +17,8 @@ data class StopwatchState(
   val restEndsAt: Double = 0.0,
   /** Duración elegida para los descansos. */
   val restDurationMs: Double = StopwatchStore.DEFAULT_REST_MS.toDouble(),
+  /** Hay un ejercicio en marcha en la pestaña Series (false = configurando). */
+  val exerciseActive: Boolean = false,
   /** Series hechas del ejercicio actual. */
   val sets: Int = 0,
   /** Series objetivo del ejercicio. */
@@ -35,11 +37,14 @@ data class StopwatchState(
   /** Se hicieron todas las series del ejercicio. */
   val exerciseDone: Boolean get() = sets >= setsTarget
 
+  /** La notificación controla las series (pestaña Series abierta y ejercicio en marcha). */
+  val seriesControls: Boolean get() = mode == Mode.SERIES && exerciseActive
+
   /**
-   * Hay algo que mostrar en la notificación. En modo series siempre: es el modo pensado para
-   * llevar las series desde la pantalla de bloqueo, desde la primera.
+   * Hay algo que mostrar en la notificación. Con un ejercicio en marcha, siempre: así se pueden
+   * marcar las series desde la pantalla de bloqueo desde la primera.
    */
-  fun hasContent(): Boolean = isRunning || elapsedMs() > 0 || isResting() || mode == Mode.SERIES
+  fun hasContent(): Boolean = isRunning || elapsedMs() > 0 || isResting() || seriesControls
 
   fun toBundle(): Bundle = Bundle().apply {
     putBoolean("isRunning", isRunning)
@@ -47,6 +52,7 @@ data class StopwatchState(
     putDouble("accumulatedMs", accumulatedMs)
     putDouble("restEndsAt", restEndsAt)
     putDouble("restDurationMs", restDurationMs)
+    putBoolean("exerciseActive", exerciseActive)
     putInt("sets", sets)
     putInt("setsTarget", setsTarget)
     putString("mode", mode.name.lowercase())
@@ -71,6 +77,7 @@ object StopwatchStore {
       accumulatedMs = p.getLong("accumulatedMs", 0L).toDouble(),
       restEndsAt = p.getLong("restEndsAt", 0L).toDouble(),
       restDurationMs = p.getLong("restDurationMs", DEFAULT_REST_MS).toDouble(),
+      exerciseActive = p.getBoolean("exerciseActive", false),
       sets = p.getInt("sets", 0).coerceIn(0, target),
       setsTarget = target,
       mode = runCatching { Mode.valueOf(p.getString("mode", null) ?: "") }.getOrDefault(Mode.STOPWATCH),
@@ -84,6 +91,7 @@ object StopwatchStore {
       .putLong("accumulatedMs", s.accumulatedMs.toLong())
       .putLong("restEndsAt", s.restEndsAt.toLong())
       .putLong("restDurationMs", s.restDurationMs.toLong())
+      .putBoolean("exerciseActive", s.exerciseActive)
       .putInt("sets", s.sets)
       .putInt("setsTarget", s.setsTarget)
       .putString("mode", s.mode.name)
@@ -160,14 +168,16 @@ object StopwatchStore {
   }
 
   /**
-   * Botón ⏳/✓ de la notificación. Hace lo mismo que la pestaña abierta en la app:
-   * en Series marca la serie; en el resto, inicia/cancela un descanso.
+   * Botón azul de la notificación. Hace lo mismo que el botón principal de la app:
+   * descansando → saltar descanso (✕); ejercicio en marcha → terminé la serie (✓) o, si está
+   * completo, siguiente ejercicio (⏭); si no → iniciar descanso (⏳).
    */
   fun notificationRestButton(context: Context): StopwatchState {
     val s = get(context)
     return when {
       s.isResting() -> cancelRest(context, keepNotification = true)
-      s.mode == Mode.SERIES -> completeSet(context)
+      s.seriesControls && s.exerciseDone -> startExercise(context)
+      s.seriesControls -> completeSet(context)
       else -> startRest(context)
     }
   }
@@ -177,8 +187,8 @@ object StopwatchStore {
     val s = get(context)
     if (s.restEndsAt <= 0) return s
     val next = commit(context, s.copy(restEndsAt = 0.0))
-    if (next.mode == Mode.SERIES && next.sets > 0) {
-      RestDoneAlert.show(context, "¡Descanso terminado!", "Serie ${next.sets + 1} de ${next.setsTarget}")
+    if (next.exerciseActive && !next.exerciseDone) {
+      RestDoneAlert.show(context, "¡Descanso terminado!", "Empieza la serie ${next.sets + 1} de ${next.setsTarget}")
     } else {
       RestDoneAlert.show(context, "¡Descanso terminado!", "A por la siguiente serie")
     }
@@ -199,15 +209,23 @@ object StopwatchStore {
     return s
   }
 
-  // MARK: - Series
+  // MARK: - Series (flujo guiado: configurar → en serie → descansando → completado)
+
+  /** "Empezar" / "Siguiente ejercicio": serie 1 del ejercicio, con la configuración actual. */
+  fun startExercise(context: Context): StopwatchState {
+    RestAlarm.cancel(context)
+    RestDoneAlert.cancel(context)
+    Haptics.play(context, Haptics.Kind.START)
+    return update(context, get(context).copy(exerciseActive = true, sets = 0, restEndsAt = 0.0))
+  }
 
   /**
-   * "Serie hecha". Si no era la última, arranca el descanso. Si era la última, avisa de que el
-   * ejercicio está completo (sin descanso). Con el ejercicio ya completo, empieza el siguiente.
+   * "Terminé la serie". Si no era la última, arranca el descanso. Si era la última, avisa de que
+   * el ejercicio está completo (sin descanso).
    */
   fun completeSet(context: Context): StopwatchState {
     val s = get(context)
-    if (s.exerciseDone) return nextExercise(context)
+    if (!s.exerciseActive || s.exerciseDone) return s
 
     val next = s.copy(sets = s.sets + 1)
     if (!next.exerciseDone) {
@@ -233,11 +251,14 @@ object StopwatchStore {
     return update(context, s.copy(sets = s.sets - 1, restEndsAt = 0.0))
   }
 
-  /** Empieza el siguiente ejercicio: series a 0 (no toca cronómetro ni descanso). */
-  fun nextExercise(context: Context): StopwatchState {
+  /** "Terminar ejercicio" / "Cambiar series o descanso": vuelve a configurar. */
+  fun endExercise(context: Context): StopwatchState {
+    val s = get(context)
+    if (s.isResting()) RestAlarm.cancel(context)
     RestDoneAlert.cancel(context)
     Haptics.play(context, Haptics.Kind.RESET)
-    return update(context, get(context).copy(sets = 0))
+    val rest = if (s.exerciseActive) 0.0 else s.restEndsAt
+    return update(context, s.copy(exerciseActive = false, sets = 0, restEndsAt = rest))
   }
 
   fun setSetsTarget(context: Context, target: Int): StopwatchState {

@@ -26,7 +26,7 @@ export default function App() {
 function Screen() {
   const insets = useSafeAreaInsets();
   const { isRunning, elapsed, start, pause, reset, rest, series, mode, setMode } = useStopwatch();
-  const seriesInProgress = series.done > 0 && series.done < series.target;
+  const seriesInProgress = series.active && series.done < series.target;
 
   const stopwatch = <StopwatchView isRunning={isRunning} elapsed={elapsed} start={start} pause={pause} reset={reset} />;
 
@@ -54,8 +54,8 @@ function Screen() {
             <SeriesView
               {...series}
               restDurationMs={rest.durationMs}
+              setRestDuration={rest.setDuration}
               skipRest={rest.cancel}
-              setTarget={series.setTarget}
             />
           )}
         </>

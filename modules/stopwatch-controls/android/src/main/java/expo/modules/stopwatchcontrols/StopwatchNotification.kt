@@ -55,13 +55,16 @@ object StopwatchNotification {
     val resting = restRemaining > 0
     // Cuenta atrás: base = ahora + lo que queda.
     val restBase = SystemClock.elapsedRealtime() + restRemaining
-    val series = state.mode == Mode.SERIES
-    // Modo series: "Serie 3/4" (+ cuenta atrás azul si se descansa antes de esa serie).
-    // Si no: "Descanso" + cuenta atrás, o el estado del cronómetro.
+    val series = state.seriesControls
+    val stopwatchUsed = state.isRunning || elapsed > 0
+    // Con un ejercicio en marcha y el cronómetro sin usar, la línea grande muestra el progreso
+    // ("2/4") en vez de un 00:00 sin sentido.
+    val showProgress = series && !stopwatchUsed
+    val progress = "${minOf(state.sets + 1, state.setsTarget)}/${state.setsTarget}"
     val status = when {
-      series && state.exerciseDone -> "Completado ${state.setsTarget}/${state.setsTarget}"
-      series -> "Serie ${state.sets + 1}/${state.setsTarget}"
       resting -> "Descanso"
+      series && state.exerciseDone -> if (showProgress) "Completado" else "Completado $progress"
+      series -> if (showProgress) "Serie" else "Serie $progress"
       state.isRunning -> "En marcha"
       elapsed > 0 -> "En pausa"
       else -> "Detenido"
@@ -75,6 +78,9 @@ object StopwatchNotification {
     // también con la notificación contraída (como suele mostrarse en la pantalla de bloqueo).
     fun views(layout: Int) = RemoteViews(context.packageName, layout).apply {
       setChronometer(R.id.stopwatch_chrono, base, null, state.isRunning)
+      setViewVisibility(R.id.stopwatch_chrono, if (showProgress) android.view.View.GONE else android.view.View.VISIBLE)
+      setViewVisibility(R.id.stopwatch_title, if (showProgress) android.view.View.VISIBLE else android.view.View.GONE)
+      setTextViewText(R.id.stopwatch_title, progress)
       setTextViewText(R.id.stopwatch_status, status)
 
       setImageViewResource(R.id.stopwatch_toggle, if (state.isRunning) R.drawable.ic_sw_pause else R.drawable.ic_sw_play)
@@ -93,7 +99,7 @@ object StopwatchNotification {
       val (icon, description) = when {
         resting -> R.drawable.ic_sw_close to "Saltar descanso"
         series && state.exerciseDone -> R.drawable.ic_sw_next to "Siguiente ejercicio"
-        series -> R.drawable.ic_sw_check to "Serie ${state.sets + 1} hecha"
+        series -> R.drawable.ic_sw_check to "Terminé la serie ${state.sets + 1}"
         else -> R.drawable.ic_sw_rest to "Descanso de ${state.restDurationMs.toLong() / 1000} segundos"
       }
       setImageViewResource(R.id.stopwatch_rest_button, icon)
