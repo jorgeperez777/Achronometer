@@ -20,6 +20,19 @@ export type StopwatchState = {
 
 export type AppMode = 'stopwatch' | 'rest' | 'series';
 
+export type LanguageSetting = 'system' | 'es' | 'en';
+
+/** Ajustes del usuario. Viven en nativo (la notificación y los avisos los usan con la app cerrada). */
+export type AppSettings = {
+  language: LanguageSetting;
+  /** Vibración de confirmación al tocar los controles. */
+  hapticsEnabled: boolean;
+  /** Vibración del aviso de fin de descanso / ejercicio. */
+  alertVibration: boolean;
+  /** Sonido del aviso de fin de descanso / ejercicio. */
+  alertSound: boolean;
+};
+
 /** Listas editables por el usuario: duraciones de descanso (ms) y número de series. */
 export type Presets = { rest: number[]; sets: number[] };
 

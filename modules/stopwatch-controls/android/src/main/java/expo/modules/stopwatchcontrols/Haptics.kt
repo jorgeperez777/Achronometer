@@ -31,8 +31,14 @@ object Haptics {
       context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
     }
 
-  @Suppress("DEPRECATION")
+  /** Vibración de confirmación de un control (si el usuario no la desactivó en Ajustes). */
   fun play(context: Context, kind: Kind) {
+    if (AppSettings.hapticsEnabled(context)) vibrate(context, kind.pattern)
+  }
+
+  /** Vibra con un patrón, sin mirar ajustes (quien llama decide). */
+  @Suppress("DEPRECATION")
+  fun vibrate(context: Context, pattern: LongArray) {
     val v = vibrator(context)?.takeIf { it.hasVibrator() } ?: return
     // Uso "alarma": Android ignora las vibraciones de "toque" de apps en segundo plano,
     // y los botones de la notificación se pulsan con la app en segundo plano.
@@ -42,9 +48,9 @@ object Haptics {
       .build()
     try {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        v.vibrate(VibrationEffect.createWaveform(kind.pattern, -1), attrs)
+        v.vibrate(VibrationEffect.createWaveform(pattern, -1), attrs)
       } else {
-        v.vibrate(kind.pattern, -1, attrs)
+        v.vibrate(pattern, -1, attrs)
       }
     } catch (e: SecurityException) {
       // Sin permiso VIBRATE: no pasa nada, solo no vibra.

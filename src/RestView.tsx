@@ -3,7 +3,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { FixedDigits } from './FixedDigits';
 import { ModeLayout } from './ModeLayout';
 import { PresetPicker } from './PresetPicker';
-import { formatDuration, speakDuration } from './presets';
+import { speakDuration } from './i18n';
+import { formatDuration } from './presets';
+import { useT } from './settings';
 import { colors, pressedStyle, radius, space } from './theme';
 
 /** m:ss redondeando hacia arriba (una cuenta atrás no debe mostrar 0:00 mientras queda tiempo). */
@@ -27,6 +29,7 @@ type Props = {
  * el selector de duración y un solo botón.
  */
 export function RestView({ remaining, durationMs, start, cancel, setDuration, options, setOptions }: Props) {
+  const t = useT();
   const resting = remaining > 0;
 
   return (
@@ -34,7 +37,7 @@ export function RestView({ remaining, durationMs, start, cancel, setDuration, op
       display={
         <>
           {/* El hueco de la etiqueta se reserva siempre para que el número no salte. */}
-          <Text style={[styles.label, !resting && styles.invisible]}>Descansando</Text>
+          <Text style={[styles.label, !resting && styles.invisible]}>{t('rest.resting')}</Text>
           <FixedDigits
             text={formatCountdown(resting ? remaining : durationMs)}
             style={[styles.countdown, resting && { color: colors.rest }]}
@@ -43,14 +46,14 @@ export function RestView({ remaining, durationMs, start, cancel, setDuration, op
 
           <View style={styles.selector}>
             <PresetPicker
-              title="Duración"
+              title={t('rest.duration')}
               kind="rest"
               options={options}
               value={durationMs}
               onSelect={setDuration}
               onChangeOptions={setOptions}
               format={formatDuration}
-              speak={speakDuration}
+              speak={(ms) => speakDuration(t, ms)}
               disabled={resting}
             />
           </View>
@@ -59,11 +62,11 @@ export function RestView({ remaining, durationMs, start, cancel, setDuration, op
       controls={
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={resting ? 'Saltar descanso' : `Descansar ${durationMs / 1000} segundos`}
+          accessibilityLabel={resting ? t('rest.skip') : t('rest.startA11y', { duration: speakDuration(t, durationMs) })}
           onPress={resting ? cancel : start}
           style={({ pressed }) => [styles.primary, resting && styles.primaryResting, pressed && pressedStyle]}
         >
-          <Text style={styles.primaryText}>{resting ? 'Saltar descanso' : 'Descansar'}</Text>
+          <Text style={styles.primaryText}>{resting ? t('rest.skip') : t('rest.start')}</Text>
         </Pressable>
       }
     />

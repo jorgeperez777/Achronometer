@@ -1,6 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { AppMode } from '../modules/stopwatch-controls';
+import type { TKey } from './i18n';
+import { useT } from './settings';
 import { colors, radius, space, TOUCH_MIN } from './theme';
 
 export type Mode = AppMode;
@@ -12,29 +14,31 @@ type Props = {
   dots: Record<Mode, string | null>;
 };
 
-const TABS: { mode: Mode; label: string }[] = [
-  { mode: 'stopwatch', label: 'Cronómetro' },
-  { mode: 'rest', label: 'Descanso' },
-  { mode: 'series', label: 'Series' },
+const TABS: { mode: Mode; label: TKey }[] = [
+  { mode: 'stopwatch', label: 'tabs.stopwatch' },
+  { mode: 'rest', label: 'tabs.rest' },
+  { mode: 'series', label: 'tabs.series' },
 ];
 
 /** Selector de modo. Un punto de color avisa si otro modo sigue en marcha. */
 export function ModeTabs({ mode, onChange, dots }: Props) {
+  const t = useT();
   return (
     <View style={styles.tabs} accessibilityRole="tablist">
-      {TABS.map((t) => (
-        <Tab key={t.mode} label={t.label} selected={mode === t.mode} dot={dots[t.mode]} onPress={() => onChange(t.mode)} />
+      {TABS.map((tab) => (
+        <Tab key={tab.mode} label={t(tab.label)} selected={mode === tab.mode} dot={dots[tab.mode]} onPress={() => onChange(tab.mode)} />
       ))}
     </View>
   );
 }
 
 function Tab({ label, selected, dot, onPress }: { label: string; selected: boolean; dot: string | null; onPress: () => void }) {
+  const t = useT();
   return (
     <Pressable
       accessibilityRole="tab"
       accessibilityState={{ selected }}
-      accessibilityLabel={dot ? `${label}, en marcha` : label}
+      accessibilityLabel={dot ? t('tabs.running', { label }) : label}
       onPress={onPress}
       style={[styles.tab, selected && styles.tabSelected]}
     >

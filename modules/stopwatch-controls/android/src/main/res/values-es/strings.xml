@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Notificación con los controles -->
+    <string name="sw_channel_name">Cronómetro</string>
+    <string name="sw_channel_desc">Controles del cronómetro en la pantalla de bloqueo</string>
+    <string name="sw_title">Cronómetro</string>
+    <string name="sw_status_rest">Descanso</string>
+    <string name="sw_status_done">Completado</string>
+    <string name="sw_status_done_progress">Completado %1$s</string>
+    <string name="sw_status_set">Serie</string>
+    <string name="sw_status_set_progress">Serie %1$s</string>
+    <string name="sw_status_running">En marcha</string>
+    <string name="sw_status_paused">En pausa</string>
+    <string name="sw_status_stopped">Detenido</string>
+    <string name="sw_a11y_pause">Pausar</string>
+    <string name="sw_a11y_resume">Reanudar</string>
+    <string name="sw_a11y_start">Iniciar</string>
+    <string name="sw_a11y_reset">Reiniciar cronómetro</string>
+    <string name="sw_a11y_skip_rest">Saltar descanso</string>
+    <string name="sw_a11y_next_exercise">Siguiente ejercicio</string>
+    <string name="sw_a11y_set_done">Terminé la serie %1$d</string>
+    <string name="sw_a11y_rest_for">Descanso de %1$d segundos</string>
+
+    <!-- Aviso de fin de descanso / ejercicio -->
+    <string name="sw_alert_channel_name">Fin del descanso</string>
+    <string name="sw_alert_channel_desc">Avisa cuando termina un descanso o un ejercicio</string>
+    <string name="sw_alert_rest_title">¡Descanso terminado!</string>
+    <string name="sw_alert_rest_text">A por la siguiente serie</string>
+    <string name="sw_alert_rest_text_set">Empieza la serie %1$d de %2$d</string>
+    <string name="sw_alert_done_title">¡Ejercicio completado!</string>
+    <string name="sw_alert_done_text">%1$d de %2$d series</string>
+</resources>

@@ -1,6 +1,6 @@
 import { NativeModule, requireNativeModule } from 'expo';
 
-import type { AppMode, Presets, StopwatchControlsEvents, StopwatchState } from './StopwatchControls.types';
+import type { AppMode, AppSettings, Presets, StopwatchControlsEvents, StopwatchState } from './StopwatchControls.types';
 
 declare class StopwatchControlsModule extends NativeModule<StopwatchControlsEvents> {
   getState(): StopwatchState;
@@ -23,6 +23,9 @@ declare class StopwatchControlsModule extends NativeModule<StopwatchControlsEven
   /** Listas editables. Solo Android (de momento). */
   getPresets?(): Presets;
   setPresets?(rest: number[], sets: number[]): Promise<Presets>;
+  /** Ajustes. Solo Android (de momento). */
+  getSettings?(): AppSettings;
+  setSettings?(patch: Partial<AppSettings>): Promise<AppSettings>;
 }
 
 export default requireNativeModule<StopwatchControlsModule>('StopwatchControls');

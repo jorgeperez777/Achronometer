@@ -56,6 +56,17 @@ class StopwatchControlsModule : Module() {
       )
     }
 
+    /** Ajustes: idioma ("system"/"es"/"en"), vibración al tocar, vibración y sonido del aviso. */
+    Function("getSettings") { AppSettings.toBundle(context) }
+    AsyncFunction("setSettings") { values: Map<String, Any?> ->
+      AppSettings.update(context, values)
+      // Por si cambió el idioma: nombres de los canales y la notificación visible.
+      StopwatchNotification.refreshChannel(context)
+      RestDoneAlert.refreshChannel(context)
+      StopwatchStore.restoreNotification(context)
+      AppSettings.toBundle(context)
+    }
+
     /** Vuelve a publicar la notificación (p. ej. después de conceder el permiso o reiniciar el teléfono). */
     Function("refreshNotification") { StopwatchStore.restoreNotification(context) }
   }

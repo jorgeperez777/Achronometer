@@ -52,6 +52,18 @@ Estado nativo: `exerciseActive`, `sets`, `setsTarget` (se recorta `sets` al leer
 - Con `seriesControls` la notificación se muestra siempre; si el cronómetro no se usa, la línea grande muestra el progreso ("2/3", `stopwatch_title`) en vez de 00:00.
 - Series, descanso y cronómetro son independientes: `reset` no toca las series.
 
+### Ajustes: idioma, vibración y sonido
+
+Pantalla de Ajustes (engranaje). **Viven en nativo** (`AppSettings`, `getSettings`/`setSettings`) porque la notificación, los avisos y la vibración se generan también con la app cerrada.
+- **Idioma**: `system` (por defecto) / `es` / `en`. Regla común JS y nativo: "sistema" = español si el teléfono está en español; si no, inglés.
+  - JS: `src/i18n.ts` (diccionarios) + `useLocales()` de `expo-localization` (reactivo). Todos los textos visibles y de accesibilidad pasan por `t()`; la validación devuelve claves (`err.*`), no frases.
+  - Nativo: recursos `values/` (inglés, respaldo) y `values-es/`; con idioma forzado se usa `AppSettings.localized(context)`. Al cambiar el idioma se actualizan los nombres de los canales y la notificación visible.
+- **Vibración al tocar** (`hapticsEnabled`) → `Haptics.play`. **Vibración y sonido del aviso** (`alertVibration`, `alertSound`) → los pone `RestDoneAlert` tras publicar el aviso.
+  - El canal del aviso es `rest_done_v2`, **sin sonido ni vibración propios** (en Android 8+ un canal no se puede cambiar desde la app una vez creado). El antiguo `rest_done` se borra.
+  - El sonido es el de notificaciones del sistema (`RingtoneManager`, `USAGE_NOTIFICATION_EVENT`): respeta volumen y modo silencio.
+- iOS: solo el idioma (vibración/sonido salen como "Disponible en Android").
+- Iconos: `@expo/vector-icons` (Ionicons), no emojis.
+
 ### Opciones editables (duraciones y series)
 
 El usuario puede añadir y borrar duraciones de descanso y números de series. Listas en nativo (`restPresets`/`setsPresets` en SharedPreferences, `getPresets`/`setPresets`), compartidas por las pestañas Descanso y Series.
@@ -84,6 +96,9 @@ src/ModeLayout.tsx              Esqueleto común: número grande centrado + cont
 src/StopwatchView.tsx           Modo cronómetro: tiempo con centésimas + Reiniciar / Iniciar·Pausar
 src/RestView.tsx                Modo descanso: duración que se convierte en cuenta atrás en el mismo sitio,
                                 selector 1:00–3:00, botón Descansar / Saltar descanso
+src/SettingsView.tsx            Ajustes (engranaje junto a las pestañas; "atrás" de Android lo cierra): idioma, vibración, sonido
+src/settings.tsx                SettingsProvider: ajustes (nativo), idioma efectivo y t(); useSettings / useT
+src/i18n.ts                     Diccionarios es/en, translate, plural, speakDuration
 src/theme.ts                    Tokens: colores con significado (verde iniciar, naranja pausar, azul descanso), espacios, radios
 src/FixedDigits.tsx             Dígitos en celdas de ancho fijo (ver Gotcha 7)
 src/useStopwatch.ts             Hook: lee estado nativo, escucha 'onChange', refresca al volver a primer plano,
@@ -97,7 +112,9 @@ modules/stopwatch-controls/     Módulo Expo local (Expo Modules API), nombre na
   android/.../StopwatchNotification.kt Notificación (RemoteViews con Chronometer + botones)
   android/.../StopwatchActionReceiver.kt BroadcastReceiver de los botones y de la alarma de descanso (funciona con la app cerrada)
   android/.../RestTimer.kt             RestAlarm (AlarmManager) + RestDoneAlert (aviso de fin de descanso)
-  android/.../Haptics.kt               Vibración de confirmación por acción
+  android/.../Haptics.kt               Vibración de confirmación por acción (respeta AppSettings.hapticsEnabled)
+  android/.../AppSettings.kt           Ajustes en SharedPreferences + Context con el idioma elegido (localized)
+  android/src/main/res/values{,-es}/strings.xml  Textos de la notificación y los avisos (inglés por defecto, español)
   android/.../StopwatchControlsModule.kt Puente a JS
   android/src/main/res/layout/stopwatch_notification{,_big}.xml  Vista contraída / expandida
   android/src/main/res/drawable/       ic_sw_play/pause/reset/rest/close, bg_sw_green/orange/gray/blue/blue_dim, ic_stopwatch

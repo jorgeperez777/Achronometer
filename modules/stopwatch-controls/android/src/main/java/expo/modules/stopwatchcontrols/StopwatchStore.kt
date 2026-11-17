@@ -187,11 +187,13 @@ object StopwatchStore {
     val s = get(context)
     if (s.restEndsAt <= 0) return s
     val next = commit(context, s.copy(restEndsAt = 0.0))
-    if (next.exerciseActive && !next.exerciseDone) {
-      RestDoneAlert.show(context, "¡Descanso terminado!", "Empieza la serie ${next.sets + 1} de ${next.setsTarget}")
+    val r = AppSettings.localized(context)
+    val text = if (next.exerciseActive && !next.exerciseDone) {
+      r.getString(R.string.sw_alert_rest_text_set, next.sets + 1, next.setsTarget)
     } else {
-      RestDoneAlert.show(context, "¡Descanso terminado!", "A por la siguiente serie")
+      r.getString(R.string.sw_alert_rest_text)
     }
+    RestDoneAlert.show(context, r.getString(R.string.sw_alert_rest_title), text)
     return next
   }
 
@@ -247,7 +249,12 @@ object StopwatchStore {
     RestAlarm.cancel(context)
     Haptics.play(context, Haptics.Kind.DONE)
     val done = commit(context, next.copy(restEndsAt = 0.0))
-    RestDoneAlert.show(context, "¡Ejercicio completado!", "${next.setsTarget} de ${next.setsTarget} series")
+    val r = AppSettings.localized(context)
+    RestDoneAlert.show(
+      context,
+      r.getString(R.string.sw_alert_done_title),
+      r.getString(R.string.sw_alert_done_text, next.setsTarget, next.setsTarget),
+    )
     return done
   }
 

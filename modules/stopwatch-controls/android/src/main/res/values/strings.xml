@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Inglés: idioma por defecto (y de respaldo para cualquier idioma del sistema que no sea español). -->
+<resources>
+    <!-- Notificación con los controles -->
+    <string name="sw_channel_name">Stopwatch</string>
+    <string name="sw_channel_desc">Stopwatch controls on the lock screen</string>
+    <string name="sw_title">Stopwatch</string>
+    <string name="sw_status_rest">Rest</string>
+    <string name="sw_status_done">Done</string>
+    <string name="sw_status_done_progress">Done %1$s</string>
+    <string name="sw_status_set">Set</string>
+    <string name="sw_status_set_progress">Set %1$s</string>
+    <string name="sw_status_running">Running</string>
+    <string name="sw_status_paused">Paused</string>
+    <string name="sw_status_stopped">Stopped</string>
+    <string name="sw_a11y_pause">Pause</string>
+    <string name="sw_a11y_resume">Resume</string>
+    <string name="sw_a11y_start">Start</string>
+    <string name="sw_a11y_reset">Reset stopwatch</string>
+    <string name="sw_a11y_skip_rest">Skip rest</string>
+    <string name="sw_a11y_next_exercise">Next exercise</string>
+    <string name="sw_a11y_set_done">Finished set %1$d</string>
+    <string name="sw_a11y_rest_for">Rest for %1$d seconds</string>
+
+    <!-- Aviso de fin de descanso / ejercicio -->
+    <string name="sw_alert_channel_name">Rest finished</string>
+    <string name="sw_alert_channel_desc">Alerts you when a rest or an exercise is over</string>
+    <string name="sw_alert_rest_title">Rest is over!</string>
+    <string name="sw_alert_rest_text">Time for your next set</string>
+    <string name="sw_alert_rest_text_set">Start set %1$d of %2$d</string>
+    <string name="sw_alert_done_title">Exercise complete!</string>
+    <string name="sw_alert_done_text">%1$d of %2$d sets</string>
+</resources>

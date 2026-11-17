@@ -48,27 +48,27 @@ object RestAlarm {
   }
 }
 
-/** Aviso (vibración + sonido) de que terminó el descanso o el ejercicio. */
+/**
+ * Aviso de que terminó el descanso o el ejercicio. El canal no tiene sonido ni vibración propios
+ * (en Android 8+ no se pueden cambiar desde la app una vez creado el canal): los pone la app según
+ * los ajustes del usuario (AppSettings.alertSound / alertVibration).
+ */
 object RestDoneAlert {
-  private const val CHANNEL_ID = "rest_done"
+  /** v2: el canal "rest_done" original sonaba y vibraba por su cuenta; se borra. */
+  private const val CHANNEL_ID = "rest_done_v2"
+  private const val OLD_CHANNEL_ID = "rest_done"
   private const val NOTIFICATION_ID = 4712
   private val VIBRATION = longArrayOf(0, 400, 200, 400, 200, 600)
 
-  private fun ensureChannel(context: Context) {
+  private fun ensureChannel(context: Context, r: Context) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
     val nm = context.getSystemService(NotificationManager::class.java)
-    if (nm.getNotificationChannel(CHANNEL_ID) != null) return
-    val channel = NotificationChannel(CHANNEL_ID, "Fin del descanso", NotificationManager.IMPORTANCE_HIGH).apply {
-      description = "Avisa con vibración y sonido cuando termina el descanso"
-      enableVibration(true)
-      vibrationPattern = VIBRATION
-      setSound(
-        RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
-        AudioAttributes.Builder()
-          .setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT)
-          .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-          .build()
-      )
+    if (nm.getNotificationChannel(OLD_CHANNEL_ID) != null) nm.deleteNotificationChannel(OLD_CHANNEL_ID)
+    // HIGH: aparece encima (heads-up) y en la pantalla de bloqueo.
+    val channel = NotificationChannel(CHANNEL_ID, r.getString(R.string.sw_alert_channel_name), NotificationManager.IMPORTANCE_HIGH).apply {
+      description = r.getString(R.string.sw_alert_channel_desc)
+      setSound(null, null)
+      enableVibration(false)
       setShowBadge(false)
       lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
     }
@@ -79,7 +79,7 @@ object RestDoneAlert {
     if (Build.VERSION.SDK_INT >= 33 &&
       ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
     ) return
-    ensureChannel(context)
+    ensureChannel(context, AppSettings.localized(context))
 
     val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)?.let {
       PendingIntent.getActivity(context, 0, it, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
@@ -92,9 +92,7 @@ object RestDoneAlert {
       .setCategory(NotificationCompat.CATEGORY_ALARM)
       .setPriority(NotificationCompat.PRIORITY_HIGH)
       .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-      // Android 7 (sin canales): vibración y sonido por notificación.
-      .setVibrate(VIBRATION)
-      .setDefaults(NotificationCompat.DEFAULT_SOUND)
+      .setSilent(true) // sonido y vibración los pone la app (abajo)
       .setAutoCancel(true)
       .setTimeoutAfter(20_000)
       .setContentIntent(launch)
@@ -103,9 +101,31 @@ object RestDoneAlert {
     try {
       NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
     } catch (e: SecurityException) {
-      // Permiso revocado; no hay nada que mostrar.
+      return // Permiso revocado; no hay nada que mostrar.
+    }
+
+    if (AppSettings.alertVibration(context)) Haptics.vibrate(context, VIBRATION)
+    if (AppSettings.alertSound(context)) playSound(context)
+  }
+
+  /** Sonido de notificación del sistema (respeta el volumen de notificaciones y el modo silencio). */
+  private fun playSound(context: Context) {
+    try {
+      val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION) ?: return
+      RingtoneManager.getRingtone(context, uri)?.apply {
+        audioAttributes = AudioAttributes.Builder()
+          .setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT)
+          .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+          .build()
+        play()
+      }
+    } catch (e: Exception) {
+      // Sin sonido disponible: no pasa nada.
     }
   }
+
+  /** Actualiza el nombre del canal al idioma actual (Ajustes del sistema → Notificaciones). */
+  fun refreshChannel(context: Context) = ensureChannel(context, AppSettings.localized(context))
 
   fun cancel(context: Context) {
     NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)

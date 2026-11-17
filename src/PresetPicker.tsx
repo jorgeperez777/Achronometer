@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AddPresetSheet } from './AddPresetSheet';
 import { MAX_PRESETS } from './presets';
+import { useT } from './settings';
 import { colors, pressedStyle, radius, space, TOUCH_MIN } from './theme';
 
 type Props = {
@@ -24,6 +25,7 @@ type Props = {
  * cada chip para borrarla (no se puede borrar la seleccionada ni la última que quede).
  */
 export function PresetPicker({ title, kind, options, value, onSelect, onChangeOptions, format, speak, disabled }: Props) {
+  const t = useT();
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
   // Si el valor guardado no está en la lista (p. ej. de una versión anterior), se muestra igual.
@@ -36,12 +38,12 @@ export function PresetPicker({ title, kind, options, value, onSelect, onChangeOp
         <Text style={styles.title}>{title}</Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={editing ? `Terminar de editar ${title}` : `Editar ${title}`}
+          accessibilityLabel={editing ? t('picker.doneA11y', { title }) : t('picker.editA11y', { title })}
           onPress={() => setEditing((e) => !e)}
           hitSlop={8}
           style={({ pressed }) => [styles.editButton, pressed && pressedStyle]}
         >
-          <Text style={styles.editText}>{editing ? 'Listo' : 'Editar'}</Text>
+          <Text style={styles.editText}>{editing ? t('picker.done') : t('picker.edit')}</Text>
         </Pressable>
       </View>
 
@@ -55,7 +57,7 @@ export function PresetPicker({ title, kind, options, value, onSelect, onChangeOp
                 key={o}
                 accessibilityRole="button"
                 accessibilityLabel={
-                  removable ? `Borrar ${speak(o)}` : selected ? `${speak(o)}, seleccionado: no se puede borrar` : speak(o)
+                  removable ? t('picker.removeA11y', { item: speak(o) }) : selected ? t('picker.lockedA11y', { item: speak(o) }) : speak(o)
                 }
                 disabled={!removable}
                 onPress={() => onChangeOptions(options.filter((x) => x !== o))}
@@ -83,7 +85,7 @@ export function PresetPicker({ title, kind, options, value, onSelect, onChangeOp
         {!editing && (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={canAdd ? `Añadir ${kind === 'rest' ? 'un descanso' : 'un número de series'}` : `Lista llena: caben ${MAX_PRESETS}`}
+            accessibilityLabel={canAdd ? t(kind === 'rest' ? 'picker.addRest' : 'picker.addSets') : t('picker.full', { max: MAX_PRESETS })}
             disabled={!canAdd}
             onPress={() => setAdding(true)}
             style={({ pressed }) => [styles.chip, styles.addChip, !canAdd && styles.dimmed, pressed && pressedStyle]}
@@ -94,7 +96,7 @@ export function PresetPicker({ title, kind, options, value, onSelect, onChangeOp
       </View>
 
       {editing && (
-        <Text style={styles.help}>Toca una opción para borrarla. La seleccionada no se puede borrar.</Text>
+        <Text style={styles.help}>{t('picker.help')}</Text>
       )}
 
       <AddPresetSheet

@@ -2,7 +2,9 @@ import { type ComponentRef, type Ref, useEffect, useRef, useState } from 'react'
 import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { addSorted, formatDuration, validateRest, validateSets } from './presets';
+import { plural } from './i18n';
+import { addSorted, formatDuration, MAX_REST_MS, MAX_SETS, MIN_REST_MS, MIN_SETS, validateRest, validateSets } from './presets';
+import { useT } from './settings';
 import { colors, pressedStyle, radius, space, TOUCH_MIN } from './theme';
 
 type Props = {
@@ -20,6 +22,7 @@ type Props = {
  * solo se muestra después de que el usuario haya escrito algo (no al abrir la hoja).
  */
 export function AddPresetSheet({ visible, kind, existing, onCancel, onAdd }: Props) {
+  const t = useT();
   const insets = useSafeAreaInsets();
   const [a, setA] = useState(''); // minutos | series
   const [b, setB] = useState(''); // segundos
@@ -36,7 +39,7 @@ export function AddPresetSheet({ visible, kind, existing, onCancel, onAdd }: Pro
 
   const result = kind === 'rest' ? validateRest(a, b, existing) : validateSets(a, existing);
   const showError = touched && !result.ok;
-  const preview = result.ok ? (kind === 'rest' ? formatDuration(result.value) : `${result.value} series`) : null;
+  const preview = result.ok ? (kind === 'rest' ? formatDuration(result.value) : plural(t, 'count.sets', result.value)) : null;
 
   const submit = () => {
     setTouched(true);
@@ -51,20 +54,22 @@ export function AddPresetSheet({ visible, kind, existing, onCancel, onAdd }: Pro
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onCancel} statusBarTranslucent>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <Pressable style={styles.backdrop} onPress={onCancel} accessibilityLabel="Cerrar" accessibilityRole="button" />
+        <Pressable style={styles.backdrop} onPress={onCancel} accessibilityLabel={t('sheet.close')} accessibilityRole="button" />
         <View style={[styles.sheet, { paddingBottom: insets.bottom + space.md }]}>
           <Text style={styles.title} accessibilityRole="header">
-            {kind === 'rest' ? 'Nuevo descanso' : 'Nuevo número de series'}
+            {t(kind === 'rest' ? 'sheet.restTitle' : 'sheet.setsTitle')}
           </Text>
           <Text style={styles.subtitle}>
-            {kind === 'rest' ? 'Entre 5 segundos y 30 minutos.' : 'Entre 1 y 20 series.'}
+            {kind === 'rest'
+              ? t('sheet.restRange', { min: MIN_REST_MS / 1000, max: MAX_REST_MS / 60_000 })
+              : t('sheet.setsRange', { min: MIN_SETS, max: MAX_SETS })}
           </Text>
 
           <View style={styles.fields}>
             {kind === 'rest' ? (
               <>
                 <Field
-                  label="Minutos"
+                  label={t('sheet.minutes')}
                   value={a}
                   onChangeText={change(setA)}
                   autoFocus
@@ -75,7 +80,7 @@ export function AddPresetSheet({ visible, kind, existing, onCancel, onAdd }: Pro
                 <Text style={styles.colon}>:</Text>
                 <Field
                   ref={secondsRef}
-                  label="Segundos"
+                  label={t('sheet.seconds')}
                   value={b}
                   onChangeText={change(setB)}
                   invalid={showError}
@@ -84,7 +89,7 @@ export function AddPresetSheet({ visible, kind, existing, onCancel, onAdd }: Pro
                 />
               </>
             ) : (
-              <Field label="Series" value={a} onChangeText={change(setA)} autoFocus invalid={showError} returnKeyType="done" onSubmitEditing={submit} />
+              <Field label={t('sheet.sets')} value={a} onChangeText={change(setA)} autoFocus invalid={showError} returnKeyType="done" onSubmitEditing={submit} />
             )}
           </View>
 
@@ -93,7 +98,7 @@ export function AddPresetSheet({ visible, kind, existing, onCancel, onAdd }: Pro
             style={[styles.message, showError ? styles.error : styles.preview]}
             accessibilityLiveRegion="polite"
           >
-            {showError && !result.ok ? result.error : preview ? `Se añadirá ${preview}` : ' '}
+            {showError && !result.ok ? t(result.error, result.params) : preview ? t('sheet.willAdd', { value: preview }) : ' '}
           </Text>
 
           <View style={styles.actions}>
@@ -102,7 +107,7 @@ export function AddPresetSheet({ visible, kind, existing, onCancel, onAdd }: Pro
               onPress={onCancel}
               style={({ pressed }) => [styles.button, styles.cancel, pressed && pressedStyle]}
             >
-              <Text style={styles.cancelText}>Cancelar</Text>
+              <Text style={styles.cancelText}>{t('sheet.cancel')}</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -111,7 +116,7 @@ export function AddPresetSheet({ visible, kind, existing, onCancel, onAdd }: Pro
               onPress={submit}
               style={({ pressed }) => [styles.button, styles.add, !result.ok && styles.disabled, pressed && pressedStyle]}
             >
-              <Text style={styles.addText}>Añadir</Text>
+              <Text style={styles.addText}>{t('sheet.add')}</Text>
             </Pressable>
           </View>
         </View>

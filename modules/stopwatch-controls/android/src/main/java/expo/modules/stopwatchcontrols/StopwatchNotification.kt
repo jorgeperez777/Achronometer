@@ -18,14 +18,14 @@ object StopwatchNotification {
   private const val CHANNEL_ID = "stopwatch"
   private const val NOTIFICATION_ID = 4711
 
-  private fun ensureChannel(context: Context) {
+  /** Crea el canal o, si ya existe, actualiza su nombre/descripción al idioma actual. */
+  private fun ensureChannel(context: Context, r: Context) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
     val nm = context.getSystemService(NotificationManager::class.java)
-    if (nm.getNotificationChannel(CHANNEL_ID) != null) return
     // Importancia DEFAULT (no LOW) para que se muestre en la pantalla de bloqueo,
     // pero sin sonido ni vibración.
-    val channel = NotificationChannel(CHANNEL_ID, "Cronómetro", NotificationManager.IMPORTANCE_DEFAULT).apply {
-      description = "Controles del cronómetro en la pantalla de bloqueo"
+    val channel = NotificationChannel(CHANNEL_ID, r.getString(R.string.sw_channel_name), NotificationManager.IMPORTANCE_DEFAULT).apply {
+      description = r.getString(R.string.sw_channel_desc)
       setSound(null, null)
       enableVibration(false)
       setShowBadge(false)
@@ -46,7 +46,8 @@ object StopwatchNotification {
     if (Build.VERSION.SDK_INT >= 33 &&
       ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
     ) return
-    ensureChannel(context)
+    val r = AppSettings.localized(context) // textos en el idioma elegido
+    ensureChannel(context, r)
 
     val elapsed = state.elapsedMs()
     // Chronometer usa elapsedRealtime como base: base = ahora - transcurrido.
@@ -62,12 +63,13 @@ object StopwatchNotification {
     val showProgress = series && !stopwatchUsed
     val progress = "${minOf(state.sets + 1, state.setsTarget)}/${state.setsTarget}"
     val status = when {
-      resting -> "Descanso"
-      series && state.exerciseDone -> if (showProgress) "Completado" else "Completado $progress"
-      series -> if (showProgress) "Serie" else "Serie $progress"
-      state.isRunning -> "En marcha"
-      elapsed > 0 -> "En pausa"
-      else -> "Detenido"
+      resting -> r.getString(R.string.sw_status_rest)
+      series && state.exerciseDone ->
+        if (showProgress) r.getString(R.string.sw_status_done) else r.getString(R.string.sw_status_done_progress, progress)
+      series -> if (showProgress) r.getString(R.string.sw_status_set) else r.getString(R.string.sw_status_set_progress, progress)
+      state.isRunning -> r.getString(R.string.sw_status_running)
+      elapsed > 0 -> r.getString(R.string.sw_status_paused)
+      else -> r.getString(R.string.sw_status_stopped)
     }
 
     val toggleIntent = actionIntent(context, StopwatchActionReceiver.ACTION_TOGGLE, 1)
@@ -86,10 +88,20 @@ object StopwatchNotification {
 
       setImageViewResource(R.id.stopwatch_toggle, if (state.isRunning) R.drawable.ic_sw_pause else R.drawable.ic_sw_play)
       setInt(R.id.stopwatch_toggle, "setBackgroundResource", if (state.isRunning) R.drawable.bg_sw_orange else R.drawable.bg_sw_green)
-      setContentDescription(R.id.stopwatch_toggle, if (state.isRunning) "Pausar" else if (elapsed > 0) "Reanudar" else "Iniciar")
+      setContentDescription(
+        R.id.stopwatch_toggle,
+        r.getString(
+          when {
+            state.isRunning -> R.string.sw_a11y_pause
+            elapsed > 0 -> R.string.sw_a11y_resume
+            else -> R.string.sw_a11y_start
+          }
+        ),
+      )
       setOnClickPendingIntent(R.id.stopwatch_toggle, toggleIntent)
 
       setViewVisibility(R.id.stopwatch_reset, if (state.isRunning || elapsed > 0) android.view.View.VISIBLE else android.view.View.GONE)
+      setContentDescription(R.id.stopwatch_reset, r.getString(R.string.sw_a11y_reset))
       setOnClickPendingIntent(R.id.stopwatch_reset, resetIntent)
 
       // Descanso: cuenta atrás animada por el sistema + botón iniciar/cancelar.
@@ -98,10 +110,10 @@ object StopwatchNotification {
       setChronometerCountDown(R.id.stopwatch_rest, true)
       // Botón ⏳/✓/⏭ (ver StopwatchStore.notificationRestButton).
       val (icon, description) = when {
-        resting -> R.drawable.ic_sw_close to "Saltar descanso"
-        series && state.exerciseDone -> R.drawable.ic_sw_next to "Siguiente ejercicio"
-        series -> R.drawable.ic_sw_check to "Terminé la serie ${state.sets + 1}"
-        else -> R.drawable.ic_sw_rest to "Descanso de ${state.restDurationMs.toLong() / 1000} segundos"
+        resting -> R.drawable.ic_sw_close to r.getString(R.string.sw_a11y_skip_rest)
+        series && state.exerciseDone -> R.drawable.ic_sw_next to r.getString(R.string.sw_a11y_next_exercise)
+        series -> R.drawable.ic_sw_check to r.getString(R.string.sw_a11y_set_done, state.sets + 1)
+        else -> R.drawable.ic_sw_rest to r.getString(R.string.sw_a11y_rest_for, (state.restDurationMs / 1000).toInt())
       }
       setImageViewResource(R.id.stopwatch_rest_button, icon)
       setInt(R.id.stopwatch_rest_button, "setBackgroundResource", if (resting) R.drawable.bg_sw_blue else R.drawable.bg_sw_blue_dim)
@@ -118,7 +130,7 @@ object StopwatchNotification {
       .setStyle(NotificationCompat.DecoratedCustomViewStyle())
       .setCustomContentView(views(R.layout.stopwatch_notification))
       .setCustomBigContentView(views(R.layout.stopwatch_notification_big))
-      .setContentTitle("Cronómetro")
+      .setContentTitle(r.getString(R.string.sw_title))
       .setContentText(status)
       .setCategory(NotificationCompat.CATEGORY_STOPWATCH)
       .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
@@ -136,6 +148,9 @@ object StopwatchNotification {
       // Permiso revocado mientras tanto; no hay nada que mostrar.
     }
   }
+
+  /** Actualiza el nombre del canal al idioma actual (Ajustes del sistema → Notificaciones). */
+  fun refreshChannel(context: Context) = ensureChannel(context, AppSettings.localized(context))
 
   fun cancel(context: Context) {
     NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)

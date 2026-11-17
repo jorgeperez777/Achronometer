@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { FixedDigits } from './FixedDigits';
 import { CONTROLS_HEIGHT, ModeLayout } from './ModeLayout';
+import { useT } from './settings';
 import { colors, pressedStyle, space } from './theme';
 
 function format(ms: number) {
@@ -28,9 +29,10 @@ type Props = {
 
 /** Modo cronómetro: el tiempo y dos botones. */
 export function StopwatchView({ isRunning, elapsed, start, pause, reset }: Props) {
+  const t = useT();
   const { main, cs } = format(elapsed);
   const isIdle = !isRunning && elapsed === 0;
-  const primaryLabel = isRunning ? 'Pausar' : isIdle ? 'Iniciar' : 'Reanudar';
+  const primaryLabel = t(isRunning ? 'stopwatch.pause' : isIdle ? 'stopwatch.start' : 'stopwatch.resume');
 
   return (
     <ModeLayout
@@ -44,12 +46,12 @@ export function StopwatchView({ isRunning, elapsed, start, pause, reset }: Props
         <View style={styles.buttons}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Reiniciar cronómetro"
+            accessibilityLabel={t('stopwatch.resetA11y')}
             disabled={isIdle}
             onPress={reset}
             style={({ pressed }) => [styles.button, styles.secondary, isIdle && styles.disabled, pressed && pressedStyle]}
           >
-            <Text style={styles.secondaryText}>Reiniciar</Text>
+            <Text style={styles.secondaryText}>{t('stopwatch.reset')}</Text>
           </Pressable>
 
           <Pressable
