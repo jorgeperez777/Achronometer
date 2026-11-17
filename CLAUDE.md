@@ -18,7 +18,7 @@ Lee también [AGENTS.md](AGENTS.md) (reglas generales de Expo del template: cons
 
 ## Stack
 
-- Expo SDK 58, React Native 0.88, React 19.3, TypeScript 6. Proyecto creado con `create-expo-app --template blank-typescript` (sin Expo Router; una sola pantalla en `App.tsx`).
+- Expo SDK 58, React Native 0.88, React 19.3, TypeScript 6. `react-native-safe-area-context` (edge-to-edge activo en Android). Proyecto creado con `create-expo-app --template blank-typescript` (sin Expo Router; una sola pantalla en `App.tsx`).
 - **Dev build** (`expo-dev-client`). **No funciona en Expo Go**: tiene código nativo propio.
 - `@bacons/apple-targets` 5.x para el widget de iOS.
 - Continuous Native Generation: `ios/` y `android/` se generan con `npx expo prebuild --clean` y están en `.gitignore`. Todo lo nativo vive en `modules/` y `targets/`.
@@ -55,10 +55,11 @@ Estado nativo extra: `restEndsAt` (epoch ms, 0 = sin descanso) y `restDurationMs
 ### Mapa de archivos
 
 ```
-App.tsx                         UI (pantalla única, tema oscuro, centésimas)
+App.tsx                         Pantalla única: arriba "Entreno" (cronómetro), abajo WorkoutCard; SafeAreaProvider
+src/theme.ts                    Tokens: colores con significado (verde iniciar, naranja pausar, azul descanso), espacios, radios
 src/FixedDigits.tsx             Dígitos en celdas de ancho fijo (ver Gotcha 7)
-src/RestPanel.tsx               UI del descanso: duraciones, botón y cuenta atrás
-src/SetsCounter.tsx             Contador de series (−/+, "Nuevo ejercicio")
+src/WorkoutCard.tsx             Tarjeta "Ejercicio" (al alcance del pulgar): serie −/+, "Nuevo ejercicio",
+                                duración/cuenta atrás en el mismo sitio, selector 1:00–3:00, "Serie hecha · Descansar"
 src/useStopwatch.ts             Hook: lee estado nativo, escucha 'onChange', refresca al volver a primer plano,
                                 pide POST_NOTIFICATIONS (Android 13+), llama refreshNotification al montar; expone `rest`
 modules/stopwatch-controls/     Módulo Expo local (Expo Modules API), nombre nativo "StopwatchControls"

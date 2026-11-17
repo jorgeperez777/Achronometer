@@ -1,11 +1,11 @@
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FixedDigits } from './src/FixedDigits';
-import { RestPanel } from './src/RestPanel';
-import { SetsCounter } from './src/SetsCounter';
+import { colors, pressedStyle, space } from './src/theme';
 import { useStopwatch } from './src/useStopwatch';
-
+import { WorkoutCard } from './src/WorkoutCard';
 
 function format(ms: number) {
   const totalCs = Math.floor(ms / 10);
@@ -22,108 +22,108 @@ function format(ms: number) {
 }
 
 export default function App() {
+  return (
+    <SafeAreaProvider>
+      <StatusBar style="light" />
+      <Screen />
+    </SafeAreaProvider>
+  );
+}
+
+/**
+ * Arriba: el tiempo total del entreno. Abajo, al alcance del pulgar: la tarjeta del ejercicio
+ * (series + descanso), que es lo que se toca entre series.
+ */
+function Screen() {
+  const insets = useSafeAreaInsets();
   const { isRunning, elapsed, start, pause, reset, rest, sets } = useStopwatch();
   const { main, cs } = format(elapsed);
   const isIdle = !isRunning && elapsed === 0;
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
-      <View style={styles.timeRow}>
-        <FixedDigits text={main} style={styles.time} fontSize={styles.time.fontSize} />
-        <FixedDigits text={`.${cs}`} style={styles.cs} fontSize={styles.cs.fontSize} />
+    <View
+      style={[
+        styles.screen,
+        { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.md },
+      ]}
+    >
+      <View style={styles.stopwatch}>
+        <Text style={styles.sectionLabel}>Entreno</Text>
+        <View style={styles.timeRow}>
+          <FixedDigits text={main} style={styles.time} fontSize={TIME_SIZE} />
+          <FixedDigits text={`.${cs}`} style={styles.cs} fontSize={CS_SIZE} />
+        </View>
+
+        <View style={styles.buttons}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Reiniciar entreno"
+            disabled={isIdle}
+            onPress={reset}
+            style={({ pressed }) => [styles.button, styles.secondary, isIdle && styles.disabled, pressed && pressedStyle]}
+          >
+            <Text style={styles.secondaryText}>Reiniciar</Text>
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={isRunning ? 'Pausar' : isIdle ? 'Iniciar' : 'Reanudar'}
+            onPress={isRunning ? pause : start}
+            style={({ pressed }) => [
+              styles.button,
+              { backgroundColor: isRunning ? colors.pauseBg : colors.startBg },
+              pressed && pressedStyle,
+            ]}
+          >
+            <Text style={[styles.primaryText, { color: isRunning ? colors.pause : colors.start }]}>
+              {isRunning ? 'Pausar' : isIdle ? 'Iniciar' : 'Reanudar'}
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
-      <View style={styles.buttons}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Reiniciar"
-          disabled={isIdle}
-          onPress={reset}
-          style={({ pressed }) => [
-            styles.button,
-            styles.secondary,
-            isIdle && styles.disabled,
-            pressed && styles.pressed,
-          ]}
-        >
-          <Text style={styles.secondaryText}>Reiniciar</Text>
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={isRunning ? 'Pausar' : 'Iniciar'}
-          onPress={isRunning ? pause : start}
-          style={({ pressed }) => [
-            styles.button,
-            isRunning ? styles.pause : styles.start,
-            pressed && styles.pressed,
-          ]}
-        >
-          <Text style={[styles.primaryText, { color: isRunning ? '#FF9F0A' : '#30D158' }]}>
-            {isRunning ? 'Pausar' : isIdle ? 'Iniciar' : 'Reanudar'}
-          </Text>
-        </Pressable>
-      </View>
-
-      {sets.supported && <SetsCounter {...sets} />}
-      {rest.supported && <RestPanel {...rest} />}
+      {rest.supported && <WorkoutCard rest={rest} sets={sets} />}
     </View>
   );
 }
 
+const TIME_SIZE = 72;
+const CS_SIZE = 36;
+const BUTTON = 84;
+
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
+    backgroundColor: colors.background,
+    paddingHorizontal: space.md,
   },
-  status: {
-    color: '#8E8E93',
-    fontSize: 16,
+  stopwatch: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  sectionLabel: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '600',
     letterSpacing: 1,
     textTransform: 'uppercase',
-    marginBottom: 8,
   },
-  timeRow: { flexDirection: 'row', alignItems: 'baseline' },
-  time: {
-    color: '#fff',
-    fontSize: 80,
-    fontWeight: '200',
-    fontVariant: ['tabular-nums'],
-  },
-  cs: {
-    color: '#8E8E93',
-    fontSize: 40,
-    fontWeight: '200',
-    fontVariant: ['tabular-nums'],
-  },
+  timeRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: space.xs },
+  time: { color: colors.text, fontSize: TIME_SIZE, fontWeight: '200', fontVariant: ['tabular-nums'] },
+  cs: { color: colors.textMuted, fontSize: CS_SIZE, fontWeight: '200', fontVariant: ['tabular-nums'] },
   buttons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignSelf: 'stretch',
-    marginTop: 64,
+    marginTop: space.lg,
+    paddingHorizontal: space.sm,
   },
   button: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
+    width: BUTTON,
+    height: BUTTON,
+    borderRadius: BUTTON / 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  secondary: { backgroundColor: '#333336' },
-  start: { backgroundColor: '#0A2A12' },
-  pause: { backgroundColor: '#332005' },
+  secondary: { backgroundColor: colors.surface },
   disabled: { opacity: 0.4 },
-  pressed: { opacity: 0.7 },
-  secondaryText: { color: '#fff', fontSize: 17 },
-  primaryText: { fontSize: 17, fontWeight: '600' },
-  hint: {
-    color: '#636366',
-    fontSize: 13,
-    textAlign: 'center',
-    marginTop: 48,
-  },
+  secondaryText: { color: colors.text, fontSize: 16 },
+  primaryText: { fontSize: 16, fontWeight: '600' },
 });

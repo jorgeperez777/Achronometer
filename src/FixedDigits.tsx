@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TextStyle, useWindowDimensions, View } from 'react-native';
+import { StyleProp, StyleSheet, Text, TextStyle, useWindowDimensions, View } from 'react-native';
 
 // Ancho de cada celda de dígito, en "em" (proporción del fontSize).
 const DIGIT_EM = 0.62;
@@ -9,7 +9,7 @@ const DIGIT_EM = 0.62;
  * no tienen dígitos tabulares y lo ignoran, así que el ancho cambiaba con cada dígito y la fila,
  * centrada, se desplazaba.
  */
-export function FixedDigits({ text, style, fontSize }: { text: string; style: TextStyle; fontSize: number }) {
+export function FixedDigits({ text, style, fontSize }: { text: string; style: StyleProp<TextStyle>; fontSize: number }) {
   const { fontScale } = useWindowDimensions();
   const width = fontSize * DIGIT_EM * fontScale;
   return (
