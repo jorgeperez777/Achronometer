@@ -43,7 +43,11 @@ export function useStopwatch() {
     StopwatchControls.refreshNotification?.();
     const sub = StopwatchControls.addListener('onChange', setState);
     const appSub = AppState.addEventListener('change', (status) => {
-      if (status === 'active') setState(StopwatchControls.getState());
+      if (status === 'active') {
+        setState(StopwatchControls.getState());
+        // Por si se quitó la notificación mientras la app estaba en segundo plano.
+        StopwatchControls.refreshNotification?.();
+      }
     });
     return () => {
       sub.remove();

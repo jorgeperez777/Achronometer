@@ -57,9 +57,6 @@ class StopwatchControlsModule : Module() {
     }
 
     /** Vuelve a publicar la notificación (p. ej. después de conceder el permiso o reiniciar el teléfono). */
-    Function("refreshNotification") {
-      val s = StopwatchStore.clearExpiredRest(context)
-      if (s.hasContent()) StopwatchNotification.show(context, s)
-    }
+    Function("refreshNotification") { StopwatchStore.restoreNotification(context) }
   }
 }

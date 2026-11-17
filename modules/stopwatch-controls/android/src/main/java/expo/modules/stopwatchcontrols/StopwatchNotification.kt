@@ -73,6 +73,7 @@ object StopwatchNotification {
     val toggleIntent = actionIntent(context, StopwatchActionReceiver.ACTION_TOGGLE, 1)
     val resetIntent = actionIntent(context, StopwatchActionReceiver.ACTION_RESET, 2)
     val restIntent = actionIntent(context, StopwatchActionReceiver.ACTION_REST, 4)
+    val dismissIntent = actionIntent(context, StopwatchActionReceiver.ACTION_DISMISSED, 5)
 
     // Los botones van dentro de la vista personalizada para que se vean
     // también con la notificación contraída (como suele mostrarse en la pantalla de bloqueo).
@@ -126,6 +127,8 @@ object StopwatchNotification {
       .setSilent(true)
       .setShowWhen(false)
       .setContentIntent(launch)
+      // Si se quita deslizando (Android 14+), se vuelve a publicar mientras haya algo en marcha.
+      .setDeleteIntent(dismissIntent)
 
     try {
       NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, builder.build())

@@ -123,7 +123,8 @@ targets/widget/                 Widget Extension de iOS (apple-targets)
 - Los botones están **dentro de la vista personalizada** (`setOnClickPendingIntent`), no como `addAction`. Motivo: en la pantalla de bloqueo / con la notificación contraída, las actions estándar no se ven. Así se ven siempre.
 - Canal `stopwatch` con `IMPORTANCE_DEFAULT` pero sin sonido ni vibración (`IMPORTANCE_LOW` haría que se ocultara en la pantalla de bloqueo en varios Android). `VISIBILITY_PUBLIC`, `CATEGORY_STOPWATCH`, `setOngoing(true)`, id `4711`.
 - `StopwatchActionReceiver` (manifest del módulo, `exported=false`) recibe `expo.modules.stopwatchcontrols.TOGGLE` / `.RESET`, actualiza el store y vuelve a publicar la notificación.
-- Al reinstalar la app o reiniciar el teléfono Android borra la notificación; `useStopwatch` llama `refreshNotification()` al montar para recuperarla si había tiempo acumulado.
+- Al reinstalar la app o reiniciar el teléfono Android borra la notificación; `useStopwatch` llama `refreshNotification()` (= `StopwatchStore.restoreNotification`) al montar **y al volver a primer plano** para recuperarla si hay algo en marcha.
+- **Android 14+ deja quitar las notificaciones `ongoing` deslizando** con el teléfono desbloqueado (no bloqueado, ni con "Borrar todo"; en Android ≤ 13 no se pueden quitar). Por eso la notificación lleva `setDeleteIntent` → `StopwatchActionReceiver` (`.DISMISSED`) → `restoreNotification`: si se quita por error mientras hay algo en marcha, se vuelve a publicar al instante. Para quitarla de verdad hay que parar todo (cancelar desde la app no dispara el deleteIntent).
 - Permiso `POST_NOTIFICATIONS` declarado en el manifest del módulo; se pide desde JS con `PermissionsAndroid` al pulsar Iniciar.
 - Dependencia `androidx.core:core:1.13.1` en `modules/stopwatch-controls/android/build.gradle`.
 

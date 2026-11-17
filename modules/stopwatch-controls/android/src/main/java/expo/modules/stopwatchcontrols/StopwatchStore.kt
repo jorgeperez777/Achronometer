@@ -198,6 +198,16 @@ object StopwatchStore {
   fun setRestDuration(context: Context, ms: Long): StopwatchState =
     update(context, get(context).copy(restDurationMs = ms.coerceIn(MIN_REST_MS, MAX_REST_MS).toDouble()))
 
+  /**
+   * Vuelve a publicar la notificación si hay algo en marcha. Se llama al abrir la app / volver a
+   * primer plano y cuando el usuario la quita deslizando (por error: los controles son la razón de
+   * ser de la app). Para quitarla de verdad basta con parar todo.
+   */
+  fun restoreNotification(context: Context) {
+    val s = clearExpiredRest(context)
+    if (s.hasContent()) StopwatchNotification.show(context, s)
+  }
+
   /** Limpia un descanso cuya alarma se perdió (p. ej. tras reiniciar el teléfono). */
   fun clearExpiredRest(context: Context): StopwatchState {
     val s = get(context)
