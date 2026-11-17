@@ -73,7 +73,7 @@ export function RestPanel({ remaining, durationMs, start, cancel, setDuration }:
 }
 
 const styles = StyleSheet.create({
-  panel: { alignSelf: 'stretch', alignItems: 'center', marginTop: 48, minHeight: 132 },
+  panel: { alignSelf: 'stretch', alignItems: 'center', marginTop: 24, minHeight: 132 },
   label: {
     color: BLUE,
     fontSize: 14,

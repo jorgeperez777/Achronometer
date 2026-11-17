@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { FixedDigits } from './src/FixedDigits';
 import { RestPanel } from './src/RestPanel';
+import { SetsCounter } from './src/SetsCounter';
 import { useStopwatch } from './src/useStopwatch';
 
 
@@ -21,7 +22,7 @@ function format(ms: number) {
 }
 
 export default function App() {
-  const { isRunning, elapsed, start, pause, reset, rest } = useStopwatch();
+  const { isRunning, elapsed, start, pause, reset, rest, sets } = useStopwatch();
   const { main, cs } = format(elapsed);
   const isIdle = !isRunning && elapsed === 0;
 
@@ -65,6 +66,7 @@ export default function App() {
         </Pressable>
       </View>
 
+      {sets.supported && <SetsCounter {...sets} />}
       {rest.supported && <RestPanel {...rest} />}
     </View>
   );

@@ -55,30 +55,30 @@
 
     <ImageView
         android:id="@+id/stopwatch_rest_button"
-        android:layout_width="52dp"
-        android:layout_height="52dp"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
         android:layout_marginEnd="10dp"
         android:background="@drawable/bg_sw_blue_dim"
         android:contentDescription="Descanso"
-        android:padding="13dp"
+        android:padding="15dp"
         android:src="@drawable/ic_sw_rest" />
 
     <ImageView
         android:id="@+id/stopwatch_reset"
-        android:layout_width="52dp"
-        android:layout_height="52dp"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
         android:layout_marginEnd="10dp"
         android:background="@drawable/bg_sw_gray"
         android:contentDescription="Reiniciar"
-        android:padding="13dp"
+        android:padding="15dp"
         android:src="@drawable/ic_sw_reset" />
 
     <ImageView
         android:id="@+id/stopwatch_toggle"
-        android:layout_width="52dp"
-        android:layout_height="52dp"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
         android:background="@drawable/bg_sw_green"
         android:contentDescription="Iniciar o pausar"
-        android:padding="12dp"
+        android:padding="14dp"
         android:src="@drawable/ic_sw_play" />
 </LinearLayout>

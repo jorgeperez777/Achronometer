@@ -47,7 +47,10 @@ Estado nativo extra: `restEndsAt` (epoch ms, 0 = sin descanso) y `restDurationMs
 - Permisos: `USE_EXACT_ALARM` (Android 13+, concedido al instalar), `SCHEDULE_EXACT_ALARM` con `maxSdkVersion=32`; en Android ≤ 11 no hace falta. Sin permiso exacto se usa `setAndAllowWhileIdle`.
 - En la notificación: botón ⏳/✕ (`.REST`) y cuenta atrás azul (`Chronometer` con `setChronometerCountDown`).
 - ✕ desde la notificación mantiene la notificación; cancelar desde la app la quita si el cronómetro está a 0.
-- iOS: `startRest`/`cancelRest`/`setRestDuration` no existen en el módulo iOS; en TS son opcionales y `RestPanel` se oculta (`restSupported`).
+- **Series**: `sets` (nativo) = series completadas; **iniciar un descanso suma 1** (también desde la notificación). La app permite −/+ y "Nuevo ejercicio" (`resetSets`, no toca el cronómetro). `reset` las pone a 0. La notificación muestra "Serie N+1" cuando no hay descanso.
+- **Vibración de confirmación** (`Haptics.kt`) en cada acción del store: 1 pulso = iniciar/descanso, 2 = pausar/cancelar descanso, largo = reiniciar. Usa `USAGE_ALARM` porque Android ignora vibraciones de "toque" de apps en segundo plano (los botones de la notificación se pulsan así).
+- Botones de la notificación: 48 dp contraída / 60 dp expandida (mínimo táctil recomendado).
+- iOS: `startRest`/`cancelRest`/`setRestDuration`/`addSets`/`resetSets` no existen en el módulo iOS; en TS son opcionales y `RestPanel` se oculta (`restSupported`).
 
 ### Mapa de archivos
 
@@ -55,6 +58,7 @@ Estado nativo extra: `restEndsAt` (epoch ms, 0 = sin descanso) y `restDurationMs
 App.tsx                         UI (pantalla única, tema oscuro, centésimas)
 src/FixedDigits.tsx             Dígitos en celdas de ancho fijo (ver Gotcha 7)
 src/RestPanel.tsx               UI del descanso: duraciones, botón y cuenta atrás
+src/SetsCounter.tsx             Contador de series (−/+, "Nuevo ejercicio")
 src/useStopwatch.ts             Hook: lee estado nativo, escucha 'onChange', refresca al volver a primer plano,
                                 pide POST_NOTIFICATIONS (Android 13+), llama refreshNotification al montar; expone `rest`
 modules/stopwatch-controls/     Módulo Expo local (Expo Modules API), nombre nativo "StopwatchControls"
@@ -66,6 +70,7 @@ modules/stopwatch-controls/     Módulo Expo local (Expo Modules API), nombre na
   android/.../StopwatchNotification.kt Notificación (RemoteViews con Chronometer + botones)
   android/.../StopwatchActionReceiver.kt BroadcastReceiver de los botones y de la alarma de descanso (funciona con la app cerrada)
   android/.../RestTimer.kt             RestAlarm (AlarmManager) + RestDoneAlert (aviso de fin de descanso)
+  android/.../Haptics.kt               Vibración de confirmación por acción
   android/.../StopwatchControlsModule.kt Puente a JS
   android/src/main/res/layout/stopwatch_notification{,_big}.xml  Vista contraída / expandida
   android/src/main/res/drawable/       ic_sw_play/pause/reset/rest/close, bg_sw_green/orange/gray/blue/blue_dim, ic_stopwatch
@@ -150,7 +155,7 @@ adb shell am start -a android.intent.action.VIEW \
 ## Ideas / pendientes
 
 - Descanso en iOS (Live Activity con `Text(timerInterval:countsDown:)` + notificación local al terminar).
-- Contador de series, botones más grandes, vibración al tocar.
+- Series y vibración también en iOS.
 - Vueltas (laps).
 - Cambiar `slug` a `achro` si se quiere que el deep link deje de decir `cronometro`.
 - Icono propio de la app (sigue el del template de Expo).

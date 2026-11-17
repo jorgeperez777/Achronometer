@@ -31,6 +31,9 @@ class StopwatchControlsModule : Module() {
     AsyncFunction("cancelRest") { StopwatchStore.cancelRest(context, keepNotification = false).toBundle() }
     AsyncFunction("setRestDuration") { ms: Double -> StopwatchStore.setRestDuration(context, ms.toLong()).toBundle() }
 
+    AsyncFunction("addSets") { delta: Int -> StopwatchStore.addSets(context, delta).toBundle() }
+    AsyncFunction("resetSets") { StopwatchStore.resetSets(context).toBundle() }
+
     /** Vuelve a publicar la notificación (p. ej. después de conceder el permiso o reiniciar el teléfono). */
     Function("refreshNotification") {
       val s = StopwatchStore.clearExpiredRest(context)

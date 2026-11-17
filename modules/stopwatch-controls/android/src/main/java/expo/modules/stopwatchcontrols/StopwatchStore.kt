@@ -14,6 +14,8 @@ data class StopwatchState(
   val restEndsAt: Double = 0.0,
   /** Duración elegida para los descansos. */
   val restDurationMs: Double = StopwatchStore.DEFAULT_REST_MS.toDouble(),
+  /** Series completadas del ejercicio actual (cada descanso iniciado cuenta una). */
+  val sets: Int = 0,
 ) {
   fun elapsedMs(now: Long = System.currentTimeMillis()): Long =
     (accumulatedMs + if (isRunning) maxOf(0.0, now - startedAt) else 0.0).toLong()
@@ -33,6 +35,7 @@ data class StopwatchState(
     putDouble("accumulatedMs", accumulatedMs)
     putDouble("restEndsAt", restEndsAt)
     putDouble("restDurationMs", restDurationMs)
+    putInt("sets", sets)
   }
 }
 
@@ -52,6 +55,7 @@ object StopwatchStore {
       accumulatedMs = p.getLong("accumulatedMs", 0L).toDouble(),
       restEndsAt = p.getLong("restEndsAt", 0L).toDouble(),
       restDurationMs = p.getLong("restDurationMs", DEFAULT_REST_MS).toDouble(),
+      sets = p.getInt("sets", 0),
     )
   }
 
@@ -62,6 +66,7 @@ object StopwatchStore {
       .putLong("accumulatedMs", s.accumulatedMs.toLong())
       .putLong("restEndsAt", s.restEndsAt.toLong())
       .putLong("restDurationMs", s.restDurationMs.toLong())
+      .putInt("sets", s.sets)
       .commit()
     val snapshot = synchronized(listeners) { listeners.toList() }
     snapshot.forEach { it(s) }
@@ -80,12 +85,14 @@ object StopwatchStore {
   fun start(context: Context): StopwatchState {
     val s = get(context)
     if (s.isRunning) return s
+    Haptics.play(context, Haptics.Kind.START)
     return commit(context, s.copy(isRunning = true, startedAt = System.currentTimeMillis().toDouble()))
   }
 
   fun pause(context: Context): StopwatchState {
     val s = get(context)
     if (!s.isRunning) return s
+    Haptics.play(context, Haptics.Kind.STOP)
     return commit(context, s.copy(isRunning = false, startedAt = 0.0, accumulatedMs = s.elapsedMs().toDouble()))
   }
 
@@ -93,12 +100,13 @@ object StopwatchStore {
     if (get(context).isRunning) pause(context) else start(context)
 
   /**
-   * Pone el cronómetro a 0 y cancela el descanso.
+   * Pone el cronómetro y las series a 0 y cancela el descanso.
    * @param keepNotification true desde la pantalla de bloqueo (para poder volver a iniciar);
    * false desde la app (se quita la notificación).
    */
   fun reset(context: Context, keepNotification: Boolean): StopwatchState {
     RestAlarm.cancel(context)
+    Haptics.play(context, Haptics.Kind.RESET)
     val s = get(context)
     return commit(
       context,
@@ -114,7 +122,9 @@ object StopwatchStore {
     val endsAt = System.currentTimeMillis() + s.restDurationMs.toLong()
     RestDoneAlert.cancel(context)
     RestAlarm.schedule(context, endsAt)
-    return commit(context, s.copy(restEndsAt = endsAt.toDouble()))
+    Haptics.play(context, Haptics.Kind.START)
+    // Iniciar un descanso = se terminó una serie.
+    return commit(context, s.copy(restEndsAt = endsAt.toDouble(), sets = s.sets + 1))
   }
 
   /**
@@ -123,6 +133,7 @@ object StopwatchStore {
    */
   fun cancelRest(context: Context, keepNotification: Boolean): StopwatchState {
     RestAlarm.cancel(context)
+    Haptics.play(context, Haptics.Kind.STOP)
     val s = get(context)
     return commit(context, s.copy(restEndsAt = 0.0), keepNotification || s.hasContentWithoutRest())
   }
@@ -147,6 +158,20 @@ object StopwatchStore {
     if (next.hasContent()) StopwatchNotification.show(context, next)
     return next
   }
+
+  // MARK: - Series
+
+  /** Corrige el contador a mano (desde la app). */
+  fun addSets(context: Context, delta: Int): StopwatchState {
+    val s = get(context)
+    val next = s.copy(sets = maxOf(0, s.sets + delta))
+    save(context, next)
+    if (next.hasContent()) StopwatchNotification.show(context, next)
+    return next
+  }
+
+  /** Nuevo ejercicio: series a 0 sin tocar el cronómetro. */
+  fun resetSets(context: Context): StopwatchState = addSets(context, -get(context).sets)
 
   /** Limpia un descanso cuya alarma se perdió (p. ej. tras reiniciar el teléfono). */
   fun clearExpiredRest(context: Context): StopwatchState {
