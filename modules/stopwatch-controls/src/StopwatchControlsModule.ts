@@ -1,6 +1,6 @@
 import { NativeModule, requireNativeModule } from 'expo';
 
-import type { StopwatchControlsEvents, StopwatchState } from './StopwatchControls.types';
+import type { AppMode, StopwatchControlsEvents, StopwatchState } from './StopwatchControls.types';
 
 declare class StopwatchControlsModule extends NativeModule<StopwatchControlsEvents> {
   getState(): StopwatchState;
@@ -13,6 +13,12 @@ declare class StopwatchControlsModule extends NativeModule<StopwatchControlsEven
   startRest?(): Promise<StopwatchState>;
   cancelRest?(): Promise<StopwatchState>;
   setRestDuration?(ms: number): Promise<StopwatchState>;
+  /** Series. Solo Android (de momento). */
+  completeSet?(): Promise<StopwatchState>;
+  undoSet?(): Promise<StopwatchState>;
+  nextExercise?(): Promise<StopwatchState>;
+  setSetsTarget?(target: number): Promise<StopwatchState>;
+  setMode?(mode: AppMode): Promise<StopwatchState>;
 }
 
 export default requireNativeModule<StopwatchControlsModule>('StopwatchControls');

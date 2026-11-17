@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AppState, PermissionsAndroid, Platform } from 'react-native';
 
-import StopwatchControls, { type StopwatchState } from '../modules/stopwatch-controls';
+import StopwatchControls, { type AppMode, type StopwatchState } from '../modules/stopwatch-controls';
 
 export function elapsedMs(s: StopwatchState, now = Date.now()) {
   return s.accumulatedMs + (s.isRunning ? Math.max(0, now - s.startedAt) : 0);
@@ -10,6 +10,10 @@ export function elapsedMs(s: StopwatchState, now = Date.now()) {
 export function restRemainingMs(s: StopwatchState, now = Date.now()) {
   return s.restEndsAt ? Math.max(0, s.restEndsAt - now) : 0;
 }
+
+/** Objetivos de series que ofrece la app. */
+export const SETS_TARGET_OPTIONS = [3, 4, 5, 6];
+const DEFAULT_SETS_TARGET = 4;
 
 /** Duraciones de descanso que ofrece la app. */
 export const REST_PRESETS_MS = [60_000, 90_000, 120_000, 180_000];
@@ -77,6 +81,32 @@ export function useStopwatch() {
   const cancelRest = useCallback(async () => {
     if (StopwatchControls.cancelRest) setState(await StopwatchControls.cancelRest());
   }, []);
+  const [mode, setModeState] = useState<AppMode>(
+    () => state.mode ?? (restRemainingMs(state) > 0 ? 'rest' : 'stopwatch'),
+  );
+  const setMode = useCallback(async (m: AppMode) => {
+    setModeState(m);
+    // Series vive en la notificación desde la primera serie: hace falta el permiso.
+    if (m === 'series') await ensureAndroidNotificationPermission();
+    if (StopwatchControls.setMode) setState(await StopwatchControls.setMode(m));
+  }, []);
+
+  const completeSet = useCallback(async () => {
+    if (!StopwatchControls.completeSet) return;
+    await ensureAndroidNotificationPermission();
+    setNow(Date.now());
+    setState(await StopwatchControls.completeSet());
+  }, []);
+  const undoSet = useCallback(async () => {
+    if (StopwatchControls.undoSet) setState(await StopwatchControls.undoSet());
+  }, []);
+  const nextExercise = useCallback(async () => {
+    if (StopwatchControls.nextExercise) setState(await StopwatchControls.nextExercise());
+  }, []);
+  const setSetsTarget = useCallback(async (t: number) => {
+    if (StopwatchControls.setSetsTarget) setState(await StopwatchControls.setSetsTarget(t));
+  }, []);
+
   const setRestDuration = useCallback(async (ms: number) => {
     if (StopwatchControls.setRestDuration) setState(await StopwatchControls.setRestDuration(ms));
   }, []);
@@ -87,6 +117,18 @@ export function useStopwatch() {
     start,
     pause,
     reset,
+    mode,
+    setMode,
+    series: {
+      supported: typeof StopwatchControls.completeSet === 'function',
+      done: state.sets ?? 0,
+      target: state.setsTarget ?? DEFAULT_SETS_TARGET,
+      restRemaining: restRemainingMs(state, now),
+      complete: completeSet,
+      undo: undoSet,
+      next: nextExercise,
+      setTarget: setSetsTarget,
+    },
     rest: {
       supported: restSupported,
       remaining: restRemainingMs(state, now),

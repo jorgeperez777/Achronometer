@@ -39,6 +39,15 @@ Semántica de acciones:
 - `reset` **desde la pantalla de bloqueo** → 0 pero **mantiene** los controles visibles (con botón ▶) para poder volver a iniciar desde ahí.
 - `reset` **no** toca el descanso (cronómetro y descanso son independientes). Desde la app, la notificación solo se quita si tampoco hay descanso en curso.
 
+### Series (solo Android, de momento)
+
+Pestaña propia. Estado nativo: `sets` (hechas), `setsTarget` (3–6, 4 por defecto; se recorta `sets` al leer) y `mode` (pestaña abierta: `stopwatch`/`rest`/`series`).
+- `completeSet` ("Serie hecha"): suma 1 y arranca el descanso; en la **última** no hay descanso: aviso "¡Ejercicio completado!" (`RestDoneAlert`) + vibración `DONE`. Con el ejercicio completo, `completeSet` = `nextExercise` (series a 0).
+- `undoSet` resta 1 y cancela el descanso que hubiera arrancado. `setSetsTarget` no baja de las ya hechas.
+- **El botón ⏳ de la notificación hace lo de la pestaña abierta** (`notificationRestButton`): en Series es ✓ (serie hecha) / ⏭ (siguiente ejercicio); en las demás, ⏳ (descanso). Durante un descanso siempre es ✕.
+- En modo Series la notificación se muestra siempre (`hasContent`), para poder llevar las series desde la pantalla de bloqueo desde la primera. Texto: "Serie N/M" (+ cuenta atrás) o "Completado M/M".
+- Series, descanso y cronómetro son independientes: `reset` no toca las series.
+
 ### Temporizador de descanso (solo Android, de momento)
 
 Cuenta atrás entre series, **independiente** del cronómetro (se puede medir el entreno total y descansar a la vez).
@@ -49,14 +58,15 @@ Estado nativo extra: `restEndsAt` (epoch ms, 0 = sin descanso) y `restDurationMs
 - ✕ desde la notificación mantiene la notificación; cancelar desde la app la quita si el cronómetro está a 0.
 - **Vibración de confirmación** (`Haptics.kt`) en cada acción del store: 1 pulso = iniciar/descanso, 2 = pausar/cancelar descanso, largo = reiniciar. Usa `USAGE_ALARM` porque Android ignora vibraciones de "toque" de apps en segundo plano (los botones de la notificación se pulsan así).
 - Botones de la notificación: 48 dp contraída / 60 dp expandida (mínimo táctil recomendado).
-- iOS: `startRest`/`cancelRest`/`setRestDuration` no existen en el módulo iOS; en TS son opcionales y `RestPanel` se oculta (`restSupported`).
+- iOS: `startRest`/`cancelRest`/`setRestDuration` (y todo lo de series) no existen en el módulo iOS; en TS son opcionales y `RestPanel` se oculta (`restSupported`).
 
 ### Mapa de archivos
 
 ```
-App.tsx                         Pantalla con dos modos (pestañas): Cronómetro y Descanso; SafeAreaProvider.
-                                Abre en Descanso si hay uno en curso. iOS (sin descanso): solo el cronómetro.
-src/ModeTabs.tsx                Pestañas; punto verde/azul si el otro modo sigue en marcha
+App.tsx                         Pantalla con tres modos (pestañas): Cronómetro, Descanso y Series; SafeAreaProvider.
+                                La pestaña abierta se guarda en nativo (`mode`). iOS (sin descanso): solo el cronómetro.
+src/ModeTabs.tsx                Pestañas; punto de color si otro modo sigue en marcha
+src/SeriesView.tsx              Modo series: puntos de progreso, "Serie N de M", objetivo 3–6, Deshacer / Serie hecha / Siguiente
 src/ModeLayout.tsx              Esqueleto común: número grande centrado + controles abajo a la misma altura en ambos modos
 src/StopwatchView.tsx           Modo cronómetro: tiempo con centésimas + Reiniciar / Iniciar·Pausar
 src/RestView.tsx                Modo descanso: duración que se convierte en cuenta atrás en el mismo sitio,
@@ -160,7 +170,7 @@ adb shell am start -a android.intent.action.VIEW \
 
 - Descanso en iOS (Live Activity con `Text(timerInterval:countsDown:)` + notificación local al terminar).
 - Vibración también en iOS.
-- Se probó y se descartó un contador de series (demasiado en pantalla para lo que aporta).
+- Series: rutinas guardadas (ejercicios con nombre, series y descanso propios) e historial del entreno.
 - Vueltas (laps).
 - Cambiar `slug` a `achro` si se quiere que el deep link deje de decir `cronometro`.
 - Icono propio de la app (sigue el del template de Expo).

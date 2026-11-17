@@ -20,7 +20,7 @@ class StopwatchActionReceiver : BroadcastReceiver() {
     when (intent.action) {
       ACTION_TOGGLE -> StopwatchStore.toggle(context)
       ACTION_RESET -> StopwatchStore.reset(context, keepNotification = true)
-      ACTION_REST -> StopwatchStore.toggleRest(context)
+      ACTION_REST -> StopwatchStore.notificationRestButton(context)
       ACTION_REST_DONE -> StopwatchStore.finishRest(context)
     }
   }

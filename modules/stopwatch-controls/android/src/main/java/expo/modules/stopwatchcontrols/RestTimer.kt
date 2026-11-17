@@ -48,7 +48,7 @@ object RestAlarm {
   }
 }
 
-/** Aviso (vibración + sonido) de que terminó el descanso. */
+/** Aviso (vibración + sonido) de que terminó el descanso o el ejercicio. */
 object RestDoneAlert {
   private const val CHANNEL_ID = "rest_done"
   private const val NOTIFICATION_ID = 4712
@@ -75,7 +75,7 @@ object RestDoneAlert {
     nm.createNotificationChannel(channel)
   }
 
-  fun show(context: Context) {
+  fun show(context: Context, title: String, text: String) {
     if (Build.VERSION.SDK_INT >= 33 &&
       ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
     ) return
@@ -87,8 +87,8 @@ object RestDoneAlert {
 
     val notification = NotificationCompat.Builder(context, CHANNEL_ID)
       .setSmallIcon(R.drawable.ic_sw_rest)
-      .setContentTitle("¡Descanso terminado!")
-      .setContentText("A por la siguiente serie")
+      .setContentTitle(title)
+      .setContentText(text)
       .setCategory(NotificationCompat.CATEGORY_ALARM)
       .setPriority(NotificationCompat.PRIORITY_HIGH)
       .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)

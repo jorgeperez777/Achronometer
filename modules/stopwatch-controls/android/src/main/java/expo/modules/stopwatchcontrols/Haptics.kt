@@ -17,8 +17,10 @@ object Haptics {
     START(longArrayOf(0, 45)),
     /** Pausar / cancelar descanso: dos pulsos cortos. */
     STOP(longArrayOf(0, 45, 90, 45)),
-    /** Reiniciar: un pulso largo. */
+    /** Reiniciar / siguiente ejercicio: un pulso largo. */
     RESET(longArrayOf(0, 160)),
+    /** Ejercicio completado: largo-corto-largo. */
+    DONE(longArrayOf(0, 200, 100, 60, 100, 200)),
   }
 
   @Suppress("DEPRECATION")

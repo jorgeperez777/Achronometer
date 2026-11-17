@@ -55,8 +55,12 @@ object StopwatchNotification {
     val resting = restRemaining > 0
     // Cuenta atrás: base = ahora + lo que queda.
     val restBase = SystemClock.elapsedRealtime() + restRemaining
-    // Durante el descanso: "Descanso" + cuenta atrás. Si no, el estado del cronómetro.
+    val series = state.mode == Mode.SERIES
+    // Modo series: "Serie 3/4" (+ cuenta atrás azul si se descansa antes de esa serie).
+    // Si no: "Descanso" + cuenta atrás, o el estado del cronómetro.
     val status = when {
+      series && state.exerciseDone -> "Completado ${state.setsTarget}/${state.setsTarget}"
+      series -> "Serie ${state.sets + 1}/${state.setsTarget}"
       resting -> "Descanso"
       state.isRunning -> "En marcha"
       elapsed > 0 -> "En pausa"
@@ -85,12 +89,16 @@ object StopwatchNotification {
       setViewVisibility(R.id.stopwatch_rest, if (resting) android.view.View.VISIBLE else android.view.View.GONE)
       setChronometer(R.id.stopwatch_rest, restBase, null, resting)
       setChronometerCountDown(R.id.stopwatch_rest, true)
-      setImageViewResource(R.id.stopwatch_rest_button, if (resting) R.drawable.ic_sw_close else R.drawable.ic_sw_rest)
+      // Botón ⏳/✓/⏭ (ver StopwatchStore.notificationRestButton).
+      val (icon, description) = when {
+        resting -> R.drawable.ic_sw_close to "Saltar descanso"
+        series && state.exerciseDone -> R.drawable.ic_sw_next to "Siguiente ejercicio"
+        series -> R.drawable.ic_sw_check to "Serie ${state.sets + 1} hecha"
+        else -> R.drawable.ic_sw_rest to "Descanso de ${state.restDurationMs.toLong() / 1000} segundos"
+      }
+      setImageViewResource(R.id.stopwatch_rest_button, icon)
       setInt(R.id.stopwatch_rest_button, "setBackgroundResource", if (resting) R.drawable.bg_sw_blue else R.drawable.bg_sw_blue_dim)
-      setContentDescription(
-        R.id.stopwatch_rest_button,
-        if (resting) "Cancelar descanso" else "Descanso de ${state.restDurationMs.toLong() / 1000} segundos",
-      )
+      setContentDescription(R.id.stopwatch_rest_button, description)
       setOnClickPendingIntent(R.id.stopwatch_rest_button, restIntent)
     }
 

@@ -1,24 +1,30 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import type { AppMode } from '../modules/stopwatch-controls';
 import { colors, radius, space, TOUCH_MIN } from './theme';
 
-export type Mode = 'stopwatch' | 'rest';
+export type Mode = AppMode;
 
 type Props = {
   mode: Mode;
   onChange: (mode: Mode) => void;
-  /** El cronómetro está en marcha (punto verde en su pestaña). */
-  stopwatchActive: boolean;
-  /** Hay un descanso en curso (punto azul en su pestaña). */
-  restActive: boolean;
+  /** Punto de color por pestaña si ese modo sigue en marcha (null = nada). */
+  dots: Record<Mode, string | null>;
 };
 
-/** Selector de modo. Un punto de color avisa si el otro modo sigue en marcha. */
-export function ModeTabs({ mode, onChange, stopwatchActive, restActive }: Props) {
+const TABS: { mode: Mode; label: string }[] = [
+  { mode: 'stopwatch', label: 'Cronómetro' },
+  { mode: 'rest', label: 'Descanso' },
+  { mode: 'series', label: 'Series' },
+];
+
+/** Selector de modo. Un punto de color avisa si otro modo sigue en marcha. */
+export function ModeTabs({ mode, onChange, dots }: Props) {
   return (
     <View style={styles.tabs} accessibilityRole="tablist">
-      <Tab label="Cronómetro" selected={mode === 'stopwatch'} dot={stopwatchActive ? colors.start : null} onPress={() => onChange('stopwatch')} />
-      <Tab label="Descanso" selected={mode === 'rest'} dot={restActive ? colors.rest : null} onPress={() => onChange('rest')} />
+      {TABS.map((t) => (
+        <Tab key={t.mode} label={t.label} selected={mode === t.mode} dot={dots[t.mode]} onPress={() => onChange(t.mode)} />
+      ))}
     </View>
   );
 }
@@ -32,7 +38,9 @@ function Tab({ label, selected, dot, onPress }: { label: string; selected: boole
       onPress={onPress}
       style={[styles.tab, selected && styles.tabSelected]}
     >
-      <Text style={[styles.tabText, selected && styles.tabTextSelected]}>{label}</Text>
+      <Text style={[styles.tabText, selected && styles.tabTextSelected]} numberOfLines={1}>
+        {label}
+      </Text>
       {/* Reserva siempre el hueco del punto para que el texto no se mueva. */}
       {dot ? <View style={[styles.dot, { backgroundColor: dot }]} /> : <View style={styles.dotSpace} />}
     </Pressable>
@@ -55,11 +63,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 5,
   },
   tabSelected: { backgroundColor: colors.surfaceRaised },
-  tabText: { color: colors.textMuted, fontSize: 16, fontWeight: '500' },
+  tabText: { color: colors.textMuted, fontSize: 15, fontWeight: '500' },
   tabTextSelected: { color: colors.text, fontWeight: '600' },
-  dot: { width: 8, height: 8, borderRadius: 4, overflow: 'hidden' },
-  dotSpace: { width: 8, height: 8 },
+  dot: { width: 7, height: 7, borderRadius: 3.5, overflow: 'hidden' },
+  dotSpace: { width: 7, height: 7 },
 });
