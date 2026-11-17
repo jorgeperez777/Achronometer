@@ -7,16 +7,16 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import { ModeTabs } from './src/ModeTabs';
 import { RestView } from './src/RestView';
 import { SeriesView } from './src/SeriesView';
-import { SettingsProvider, useT } from './src/settings';
+import { SettingsProvider, useColors, useT, useThemedStyles } from './src/settings';
 import { SettingsView } from './src/SettingsView';
 import { StopwatchView } from './src/StopwatchView';
-import { colors, pressedStyle, space, TOUCH_MIN } from './src/theme';
+import { type Colors, pressedStyle, space, TOUCH_MIN } from './src/theme';
 import { useStopwatch } from './src/useStopwatch';
 
 export default function App() {
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
+      <StatusBar style="auto" />
       <SettingsProvider>
         <Screen />
       </SettingsProvider>
@@ -32,6 +32,8 @@ export default function App() {
 function Screen() {
   const insets = useSafeAreaInsets();
   const t = useT();
+  const colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   const [showSettings, setShowSettings] = useState(false);
   const { isRunning, elapsed, start, pause, reset, rest, series, mode, setMode } = useStopwatch();
   const seriesInProgress = series.active && series.done < series.target;
@@ -110,7 +112,8 @@ function Screen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   headerEnd: { justifyContent: 'flex-end' },
   tabs: { flex: 1 },

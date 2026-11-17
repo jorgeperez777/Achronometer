@@ -2,19 +2,26 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
-import type { LanguageSetting } from '../modules/stopwatch-controls';
+import type { LanguageSetting, ThemeSetting } from '../modules/stopwatch-controls';
 import { LANGUAGE_NAMES } from './i18n';
-import { useSettings } from './settings';
-import { colors, pressedStyle, radius, space, TOUCH_MIN } from './theme';
+import { useSettings, useThemedStyles } from './settings';
+import { type Colors, pressedStyle, radius, space, TOUCH_MIN } from './theme';
 
 /** Pantalla de ajustes: idioma, vibración (al tocar / aviso) y sonido del aviso. */
 export function SettingsView({ onClose }: { onClose: () => void }) {
-  const { settings, update, t, systemLang, nativeSettings } = useSettings();
+  const { settings, update, t, systemLang, nativeSettings, colors } = useSettings();
+  const styles = useThemedStyles(makeStyles);
 
   const languages: { value: LanguageSetting; label: string }[] = [
     { value: 'system', label: t('settings.langSystem', { current: LANGUAGE_NAMES[systemLang] }) },
     { value: 'es', label: LANGUAGE_NAMES.es },
     { value: 'en', label: LANGUAGE_NAMES.en },
+  ];
+
+  const themes: { value: ThemeSetting; label: string }[] = [
+    { value: 'system', label: t('settings.themeSystem') },
+    { value: 'dark', label: t('settings.themeDark') },
+    { value: 'light', label: t('settings.themeLight') },
   ];
 
   return (
@@ -36,23 +43,11 @@ export function SettingsView({ onClose }: { onClose: () => void }) {
 
       <ScrollView contentContainerStyle={styles.content}>
         <Section title={t('settings.language')}>
-          <View accessibilityRole="radiogroup">
-            {languages.map((l, i) => {
-              const selected = settings.language === l.value;
-              return (
-                <Pressable
-                  key={l.value}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected }}
-                  onPress={() => update({ language: l.value })}
-                  style={({ pressed }) => [styles.row, i > 0 && styles.rowDivider, pressed && pressedStyle]}
-                >
-                  <Text style={styles.rowText}>{l.label}</Text>
-                  {selected && <Ionicons name="checkmark" size={22} color={colors.rest} />}
-                </Pressable>
-              );
-            })}
-          </View>
+          <RadioList options={languages} value={settings.language} onChange={(language) => update({ language })} />
+        </Section>
+
+        <Section title={t('settings.theme')}>
+          <RadioList options={themes} value={settings.theme ?? 'system'} onChange={(theme) => update({ theme })} />
         </Section>
 
         <Section title={t('settings.vibration')} footer={nativeSettings ? undefined : t('settings.androidOnly')}>
@@ -88,6 +83,7 @@ export function SettingsView({ onClose }: { onClose: () => void }) {
 }
 
 function Section({ title, footer, children }: { title: string; footer?: string; children: ReactNode }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle} accessibilityRole="header">
@@ -95,6 +91,39 @@ function Section({ title, footer, children }: { title: string; footer?: string; 
       </Text>
       <View style={styles.card}>{children}</View>
       {footer && <Text style={styles.footer}>{footer}</Text>}
+    </View>
+  );
+}
+
+/** Lista de opciones excluyentes (idioma, tema) con ✓ en la elegida. */
+function RadioList<V extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { value: V; label: string }[];
+  value: V;
+  onChange: (v: V) => void;
+}) {
+  const { colors } = useSettings();
+  const styles = useThemedStyles(makeStyles);
+  return (
+    <View accessibilityRole="radiogroup">
+      {options.map((o, i) => {
+        const selected = value === o.value;
+        return (
+          <Pressable
+            key={o.value}
+            accessibilityRole="radio"
+            accessibilityState={{ selected }}
+            onPress={() => onChange(o.value)}
+            style={({ pressed }) => [styles.row, i > 0 && styles.rowDivider, pressed && pressedStyle]}
+          >
+            <Text style={styles.rowText}>{o.label}</Text>
+            {selected && <Ionicons name="checkmark" size={22} color={colors.rest} />}
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -114,6 +143,8 @@ function SwitchRow({
   disabled?: boolean;
   divider?: boolean;
 }) {
+  const { colors } = useSettings();
+  const styles = useThemedStyles(makeStyles);
   return (
     // Toda la fila es pulsable (no solo el interruptor): blanco táctil grande.
     <Pressable
@@ -134,14 +165,15 @@ function SwitchRow({
         onValueChange={onChange}
         disabled={disabled}
         trackColor={{ false: colors.surfaceRaised, true: colors.rest }}
-        thumbColor={colors.text}
+        thumbColor={colors.onAccent}
         importantForAccessibility="no"
       />
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
   root: { flex: 1, alignSelf: 'stretch' },
   header: { flexDirection: 'row', alignItems: 'center', minHeight: TOUCH_MIN, gap: space.xs },
   back: { width: TOUCH_MIN, height: TOUCH_MIN, alignItems: 'center', justifyContent: 'center', marginLeft: -space.sm },
@@ -159,7 +191,7 @@ const styles = StyleSheet.create({
   },
   card: { backgroundColor: colors.surface, borderRadius: radius.md, paddingHorizontal: space.md },
   row: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#3A3A3C' },
+  rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   rowText: { color: colors.text, fontSize: 17 },
   switchRow: { paddingVertical: space.sm + 4, gap: space.md },
   switchText: { flex: 1 },

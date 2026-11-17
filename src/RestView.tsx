@@ -5,8 +5,8 @@ import { ModeLayout } from './ModeLayout';
 import { PresetPicker } from './PresetPicker';
 import { speakDuration } from './i18n';
 import { formatDuration } from './presets';
-import { useT } from './settings';
-import { colors, pressedStyle, radius, space } from './theme';
+import { useColors, useT, useThemedStyles } from './settings';
+import { type Colors, pressedStyle, radius, space } from './theme';
 
 /** m:ss redondeando hacia arriba (una cuenta atrás no debe mostrar 0:00 mientras queda tiempo). */
 function formatCountdown(ms: number) {
@@ -30,6 +30,8 @@ type Props = {
  */
 export function RestView({ remaining, durationMs, start, cancel, setDuration, options, setOptions }: Props) {
   const t = useT();
+  const colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   const resting = remaining > 0;
 
   return (
@@ -66,7 +68,7 @@ export function RestView({ remaining, durationMs, start, cancel, setDuration, op
           onPress={resting ? cancel : start}
           style={({ pressed }) => [styles.primary, resting && styles.primaryResting, pressed && pressedStyle]}
         >
-          <Text style={styles.primaryText}>{resting ? t('rest.skip') : t('rest.start')}</Text>
+          <Text style={[styles.primaryText, resting && styles.primaryTextResting]}>{resting ? t('rest.skip') : t('rest.start')}</Text>
         </Pressable>
       }
     />
@@ -75,7 +77,8 @@ export function RestView({ remaining, durationMs, start, cancel, setDuration, op
 
 const COUNTDOWN_SIZE = 96;
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
   label: {
     color: colors.rest,
     fontSize: 13,
@@ -93,6 +96,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.rest,
   },
-  primaryResting: { backgroundColor: colors.surfaceRaised },
-  primaryText: { color: colors.text, fontSize: 18, fontWeight: '600' },
+  primaryResting: { backgroundColor: colors.secondary, borderWidth: 1, borderColor: colors.secondaryBorder },
+  primaryText: { color: colors.onAccent, fontSize: 18, fontWeight: '600' },
+  primaryTextResting: { color: colors.text },
 });

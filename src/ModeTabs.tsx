@@ -2,8 +2,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { AppMode } from '../modules/stopwatch-controls';
 import type { TKey } from './i18n';
-import { useT } from './settings';
-import { colors, radius, space, TOUCH_MIN } from './theme';
+import { useT, useThemedStyles } from './settings';
+import { type Colors, radius, space, TOUCH_MIN } from './theme';
 
 export type Mode = AppMode;
 
@@ -23,6 +23,7 @@ const TABS: { mode: Mode; label: TKey }[] = [
 /** Selector de modo. Un punto de color avisa si otro modo sigue en marcha. */
 export function ModeTabs({ mode, onChange, dots }: Props) {
   const t = useT();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.tabs} accessibilityRole="tablist">
       {TABS.map((tab) => (
@@ -34,6 +35,7 @@ export function ModeTabs({ mode, onChange, dots }: Props) {
 
 function Tab({ label, selected, dot, onPress }: { label: string; selected: boolean; dot: string | null; onPress: () => void }) {
   const t = useT();
+  const styles = useThemedStyles(makeStyles);
   return (
     <Pressable
       accessibilityRole="tab"
@@ -51,7 +53,8 @@ function Tab({ label, selected, dot, onPress }: { label: string; selected: boole
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
   tabs: {
     flexDirection: 'row',
     alignSelf: 'stretch',

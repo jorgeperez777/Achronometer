@@ -2,8 +2,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { FixedDigits } from './FixedDigits';
 import { CONTROLS_HEIGHT, ModeLayout } from './ModeLayout';
-import { useT } from './settings';
-import { colors, pressedStyle, space } from './theme';
+import { useColors, useT, useThemedStyles } from './settings';
+import { type Colors, pressedStyle, space } from './theme';
 
 function format(ms: number) {
   const totalCs = Math.floor(ms / 10);
@@ -30,6 +30,8 @@ type Props = {
 /** Modo cronómetro: el tiempo y dos botones. */
 export function StopwatchView({ isRunning, elapsed, start, pause, reset }: Props) {
   const t = useT();
+  const colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   const { main, cs } = format(elapsed);
   const isIdle = !isRunning && elapsed === 0;
   const primaryLabel = t(isRunning ? 'stopwatch.pause' : isIdle ? 'stopwatch.start' : 'stopwatch.resume');
@@ -77,7 +79,8 @@ export function StopwatchView({ isRunning, elapsed, start, pause, reset }: Props
 const TIME_SIZE = 80;
 const CS_SIZE = 40;
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
   timeRow: { flexDirection: 'row', alignItems: 'baseline' },
   time: { color: colors.text, fontSize: TIME_SIZE, fontWeight: '200', fontVariant: ['tabular-nums'] },
   cs: { color: colors.textMuted, fontSize: CS_SIZE, fontWeight: '200', fontVariant: ['tabular-nums'] },
@@ -89,7 +92,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  secondary: { backgroundColor: colors.surface },
+  secondary: { backgroundColor: colors.secondary, borderWidth: 1, borderColor: colors.secondaryBorder },
   disabled: { opacity: 0.4 },
   secondaryText: { color: colors.text, fontSize: 16 },
   primaryText: { fontSize: 16, fontWeight: '600' },

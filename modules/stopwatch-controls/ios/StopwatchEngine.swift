@@ -421,10 +421,17 @@ public final class StopwatchEngine {
 public enum Settings {
   private static var defaults: UserDefaults { .standard }
   static let languages: Set<String> = ["system", "es", "en"]
+  static let themes: Set<String> = ["system", "dark", "light"]
 
   public static var language: String {
     let v = defaults.string(forKey: "language") ?? "system"
     return languages.contains(v) ? v : "system"
+  }
+
+  /// Tema de la app: "system" (por defecto), "dark" o "light". Solo lo usa la app (JS).
+  public static var theme: String {
+    let v = defaults.string(forKey: "theme") ?? "system"
+    return themes.contains(v) ? v : "system"
   }
 
   public static var hapticsEnabled: Bool { defaults.object(forKey: "hapticsEnabled") as? Bool ?? true }
@@ -440,6 +447,7 @@ public enum Settings {
   public static func toDictionary() -> [String: Any] {
     [
       "language": language,
+      "theme": theme,
       "hapticsEnabled": hapticsEnabled,
       "alertVibration": alertVibration,
       "alertSound": alertSound,
@@ -449,6 +457,7 @@ public enum Settings {
   /// Aplica solo las claves presentes y válidas.
   public static func update(_ values: [String: Any]) {
     if let l = values["language"] as? String, languages.contains(l) { defaults.set(l, forKey: "language") }
+    if let t = values["theme"] as? String, themes.contains(t) { defaults.set(t, forKey: "theme") }
     for k in ["hapticsEnabled", "alertVibration", "alertSound"] {
       if let b = values[k] as? Bool { defaults.set(b, forKey: k) }
     }

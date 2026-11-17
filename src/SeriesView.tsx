@@ -5,8 +5,8 @@ import { ModeLayout } from './ModeLayout';
 import { PresetPicker } from './PresetPicker';
 import { plural, speakDuration } from './i18n';
 import { formatDuration } from './presets';
-import { useT } from './settings';
-import { colors, pressedStyle, radius, space } from './theme';
+import { useColors, useT, useThemedStyles } from './settings';
+import { type Colors, pressedStyle, radius, space } from './theme';
 
 function formatCountdown(ms: number) {
   const total = Math.ceil(ms / 1000);
@@ -42,6 +42,8 @@ type Props = {
  */
 export function SeriesView(p: Props) {
   const t = useT();
+  const colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   const setsLabel = plural(t, 'count.sets', p.target);
   const resting = p.restRemaining > 0;
   const completed = p.active && p.done >= p.target;
@@ -131,7 +133,7 @@ export function SeriesView(p: Props) {
             label={t('series.startNow', { n: next })}
             a11y={t('series.startNowA11y', { n: next })}
             onPress={p.skipRest}
-            bg={colors.surfaceRaised}
+            secondary
           />
         }
       />
@@ -163,6 +165,7 @@ export function SeriesView(p: Props) {
 }
 
 function Dots({ done, target, complete, a11y }: { done: number; target: number; complete?: boolean; a11y: string }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.dots} accessible accessibilityLabel={a11y}>
       {Array.from({ length: target }, (_, i) => (
@@ -172,24 +175,43 @@ function Dots({ done, target, complete, a11y }: { done: number; target: number; 
   );
 }
 
-function Primary({ label, a11y, onPress, bg = colors.rest, fg = colors.text }: { label: string; a11y: string; onPress: () => void; bg?: string; fg?: string }) {
+function Primary({
+  label,
+  a11y,
+  onPress,
+  bg,
+  fg,
+  secondary,
+}: {
+  label: string;
+  a11y: string;
+  onPress: () => void;
+  bg?: string;
+  fg?: string;
+  /** Acción secundaria (gris con borde) en lugar de color. */
+  secondary?: boolean;
+}) {
+  const colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={a11y}
       onPress={onPress}
-      style={({ pressed }) => [styles.primary, { backgroundColor: bg }, pressed && pressedStyle]}
+      style={({ pressed }) => [styles.primary, secondary ? styles.secondary : { backgroundColor: bg ?? colors.rest }, pressed && pressedStyle]}
     >
-      <Text style={[styles.primaryText, { color: fg }]}>{label}</Text>
+      <Text style={[styles.primaryText, { color: fg ?? (secondary ? colors.text : colors.onAccent) }]}>{label}</Text>
     </Pressable>
   );
 }
 
 function Links({ children }: { children: ReactNode }) {
+  const styles = useThemedStyles(makeStyles);
   return <View style={styles.links}>{children}</View>;
 }
 
 function Link({ label, onPress }: { label: string; onPress: () => void }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <Pressable
       accessibilityRole="button"
@@ -205,7 +227,8 @@ function Link({ label, onPress }: { label: string; onPress: () => void }) {
 
 const DOT = 14;
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
   title: { color: colors.text, fontSize: 28, fontWeight: '600', textAlign: 'center' },
   completeText: { color: colors.start },
   hint: { color: colors.textMuted, fontSize: 16, textAlign: 'center', marginTop: space.sm, paddingHorizontal: space.lg },
@@ -221,7 +244,7 @@ const styles = StyleSheet.create({
   sub: { color: colors.textMuted, fontSize: 18 },
   summary: { color: colors.textMuted, fontSize: 14, marginTop: space.lg, fontVariant: ['tabular-nums'] },
   dots: { flexDirection: 'row', gap: 10, marginBottom: space.lg },
-  dot: { width: DOT, height: DOT, borderRadius: DOT / 2, borderWidth: 2, borderColor: '#48484A' },
+  dot: { width: DOT, height: DOT, borderRadius: DOT / 2, borderWidth: 2, borderColor: colors.borderStrong },
   dotDone: { backgroundColor: colors.rest, borderColor: colors.rest },
   dotComplete: { backgroundColor: colors.start, borderColor: colors.start },
   links: { flexDirection: 'row', gap: space.lg, marginTop: space.lg },
@@ -229,4 +252,5 @@ const styles = StyleSheet.create({
   linkText: { color: colors.rest, fontSize: 15 },
   primary: { height: 64, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   primaryText: { fontSize: 18, fontWeight: '600' },
+  secondary: { backgroundColor: colors.secondary, borderWidth: 1, borderColor: colors.secondaryBorder },
 });

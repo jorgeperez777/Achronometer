@@ -22,9 +22,13 @@ export type AppMode = 'stopwatch' | 'rest' | 'series';
 
 export type LanguageSetting = 'system' | 'es' | 'en';
 
+export type ThemeSetting = 'system' | 'dark' | 'light';
+
 /** Ajustes del usuario. Viven en nativo (la notificación y los avisos los usan con la app cerrada). */
 export type AppSettings = {
   language: LanguageSetting;
+  /** Tema de la app (la notificación y la Live Activity siguen al sistema). */
+  theme: ThemeSetting;
   /** Vibración de confirmación al tocar los controles. */
   hapticsEnabled: boolean;
   /** Vibración del aviso de fin de descanso / ejercicio. */

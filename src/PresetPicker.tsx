@@ -3,8 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AddPresetSheet } from './AddPresetSheet';
 import { MAX_PRESETS } from './presets';
-import { useT } from './settings';
-import { colors, pressedStyle, radius, space, TOUCH_MIN } from './theme';
+import { useT, useThemedStyles } from './settings';
+import { type Colors, pressedStyle, radius, space, TOUCH_MIN } from './theme';
 
 type Props = {
   /** Título del selector ("Descanso entre series"). */
@@ -26,6 +26,7 @@ type Props = {
  */
 export function PresetPicker({ title, kind, options, value, onSelect, onChangeOptions, format, speak, disabled }: Props) {
   const t = useT();
+  const styles = useThemedStyles(makeStyles);
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
   // Si el valor guardado no está en la lista (p. ej. de una versión anterior), se muestra igual.
@@ -116,7 +117,8 @@ export function PresetPicker({ title, kind, options, value, onSelect, onChangeOp
 
 const CHIP_H = TOUCH_MIN - space.xs;
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
   root: { alignSelf: 'stretch' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.sm },
   title: {
@@ -147,7 +149,7 @@ const styles = StyleSheet.create({
   chipText: { color: colors.textMuted, fontSize: 16, fontVariant: ['tabular-nums'] },
   chipTextSelected: { color: colors.text, fontWeight: '600' },
   remove: { color: colors.danger, fontSize: 14, fontWeight: '700' },
-  addChip: { borderStyle: 'dashed', borderColor: '#48484A', backgroundColor: 'transparent' },
+  addChip: { borderStyle: 'dashed', borderColor: colors.borderStrong, backgroundColor: 'transparent' },
   addText: { color: colors.rest, fontSize: 22, lineHeight: 26 },
   help: { color: colors.textMuted, fontSize: 13, marginTop: space.sm },
   dimmed: { opacity: 0.35 },

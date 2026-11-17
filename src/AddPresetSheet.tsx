@@ -4,8 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { plural } from './i18n';
 import { addSorted, formatDuration, MAX_REST_MS, MAX_SETS, MIN_REST_MS, MIN_SETS, validateRest, validateSets } from './presets';
-import { useT } from './settings';
-import { colors, pressedStyle, radius, space, TOUCH_MIN } from './theme';
+import { useColors, useT, useThemedStyles } from './settings';
+import { type Colors, pressedStyle, radius, space, TOUCH_MIN } from './theme';
 
 type Props = {
   visible: boolean;
@@ -23,6 +23,7 @@ type Props = {
  */
 export function AddPresetSheet({ visible, kind, existing, onCancel, onAdd }: Props) {
   const t = useT();
+  const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const [a, setA] = useState(''); // minutos | series
   const [b, setB] = useState(''); // segundos
@@ -139,6 +140,8 @@ type FieldProps = {
 };
 
 function Field({ label, value, onChangeText, invalid, autoFocus, returnKeyType, onSubmitEditing, ref }: FieldProps) {
+  const colors = useColors();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.field}>
       <TextInput
@@ -152,7 +155,7 @@ function Field({ label, value, onChangeText, invalid, autoFocus, returnKeyType, 
         returnKeyType={returnKeyType}
         onSubmitEditing={onSubmitEditing}
         placeholder="0"
-        placeholderTextColor="#48484A"
+        placeholderTextColor={colors.placeholder}
         accessibilityLabel={label}
         style={[styles.input, invalid && styles.inputInvalid]}
         selectionColor={colors.rest}
@@ -162,9 +165,10 @@ function Field({ label, value, onChangeText, invalid, autoFocus, returnKeyType, 
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) =>
+  StyleSheet.create({
   flex: { flex: 1, justifyContent: 'flex-end' },
-  backdrop: { ...StyleSheet.absoluteFill, backgroundColor: '#000000B3' },
+  backdrop: { ...StyleSheet.absoluteFill, backgroundColor: colors.backdrop },
   sheet: {
     backgroundColor: colors.surface,
     borderTopLeftRadius: radius.lg,
@@ -196,9 +200,9 @@ const styles = StyleSheet.create({
   preview: { color: colors.textMuted },
   actions: { flexDirection: 'row', gap: space.sm, marginTop: space.sm },
   button: { flex: 1, height: TOUCH_MIN + 8, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-  cancel: { backgroundColor: colors.surfaceRaised },
+  cancel: { backgroundColor: colors.secondary, borderWidth: 1, borderColor: colors.secondaryBorder },
   cancelText: { color: colors.text, fontSize: 17 },
   add: { backgroundColor: colors.rest },
-  addText: { color: colors.text, fontSize: 17, fontWeight: '600' },
+  addText: { color: colors.onAccent, fontSize: 17, fontWeight: '600' },
   disabled: { opacity: 0.4 },
 });

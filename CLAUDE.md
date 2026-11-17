@@ -62,6 +62,9 @@ Pantalla de Ajustes (engranaje). **Viven en nativo** (`AppSettings`, `getSetting
   - El canal del aviso es `rest_done_v2`, **sin sonido ni vibración propios** (en Android 8+ un canal no se puede cambiar desde la app una vez creado). El antiguo `rest_done` se borra.
   - El sonido es el de notificaciones del sistema (`RingtoneManager`, `USAGE_NOTIFICATION_EVENT`): respeta volumen y modo silencio.
 - iOS: mismas claves en `UserDefaults` (`Settings` en `StopwatchEngine.swift`). La vibración al tocar solo funciona con la app en primer plano (iOS no deja vibrar en segundo plano); la del aviso, con la app abierta (`AudioServicesPlaySystemSound`); con la app cerrada el iPhone vibra con el sonido de la notificación según sus ajustes. Los textos de Ajustes lo explican (`settings.*HintIos`).
+- **Tema**: `system` (por defecto) / `dark` / `light` (`theme` en los ajustes nativos; solo lo usa JS). `app.json` tiene `userInterfaceStyle: "automatic"` para que "sistema" siga al teléfono; con tema forzado `Appearance.setColorScheme` cambia también los controles nativos (teclado, Switch, Modal). La notificación y la Live Activity no cambian.
+  - Paletas `darkColors` / `lightColors` en `src/theme.ts` (mismas claves; en claro, verde/naranja/azul más oscuros para el contraste; `onAccent` = texto sobre un botón de color).
+  - Los componentes **no importan colores**: `const makeStyles = (colors: Colors) => StyleSheet.create(...)` a nivel de módulo + `useThemedStyles(makeStyles)`; colores sueltos con `useColors()`.
 - Iconos: `@expo/vector-icons` (Ionicons), no emojis.
 
 ### Opciones editables (duraciones y series)
@@ -98,10 +101,10 @@ src/ModeLayout.tsx              Esqueleto común: número grande centrado + cont
 src/StopwatchView.tsx           Modo cronómetro: tiempo con centésimas + Reiniciar / Iniciar·Pausar
 src/RestView.tsx                Modo descanso: duración que se convierte en cuenta atrás en el mismo sitio,
                                 selector 1:00–3:00, botón Descansar / Saltar descanso
-src/SettingsView.tsx            Ajustes (engranaje junto a las pestañas; "atrás" de Android lo cierra): idioma, vibración, sonido
-src/settings.tsx                SettingsProvider: ajustes (nativo), idioma efectivo y t(); useSettings / useT
+src/SettingsView.tsx            Ajustes (engranaje junto a las pestañas; "atrás" de Android lo cierra): idioma, tema, vibración, sonido
+src/settings.tsx                SettingsProvider: ajustes (nativo), idioma y tema efectivos; useSettings / useT / useColors / useThemedStyles
 src/i18n.ts                     Diccionarios es/en, translate, plural, speakDuration
-src/theme.ts                    Tokens: colores con significado (verde iniciar, naranja pausar, azul descanso), espacios, radios
+src/theme.ts                    Tokens: paletas oscura/clara con colores con significado (verde iniciar, naranja pausar, azul descanso), espacios, radios
 src/FixedDigits.tsx             Dígitos en celdas de ancho fijo (ver Gotcha 7)
 src/useStopwatch.ts             Hook: lee estado nativo, escucha 'onChange', refresca al volver a primer plano,
                                 pide POST_NOTIFICATIONS (Android 13+), llama refreshNotification al montar; expone `rest`
@@ -166,7 +169,7 @@ npx expo run:ios                   # compilar + instalar + Metro (simulador)
 npx expo run:android               # ídem en Android (dispositivo por USB o emulador)
 npx expo start --dev-client        # solo Metro
 npx tsc --noEmit                   # typecheck
-npx expo lint
+npx expo lint                      # ESLint (eslint-config-expo). Hay 3 errores previos del React Compiler en useStopwatch.ts / AddPresetSheet.tsx
 ```
 
 Build manual (lo que se usó al desarrollar):

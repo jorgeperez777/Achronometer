@@ -13,12 +13,17 @@ object AppSettings {
   private const val PREFS = "stopwatch_controls"
   const val LANGUAGE_SYSTEM = "system"
   private val LANGUAGES = setOf(LANGUAGE_SYSTEM, "es", "en")
+  private val THEMES = setOf("system", "dark", "light")
 
   private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
   /** "system" (por defecto), "es" o "en". */
   fun language(context: Context): String =
     prefs(context).getString("language", LANGUAGE_SYSTEM).takeIf { it in LANGUAGES } ?: LANGUAGE_SYSTEM
+
+  /** Tema de la app: "system" (por defecto), "dark" o "light". Solo lo usa la app (JS). */
+  fun theme(context: Context): String =
+    prefs(context).getString("theme", "system").takeIf { it in THEMES } ?: "system"
 
   /** Vibración de confirmación al tocar los controles. */
   fun hapticsEnabled(context: Context) = prefs(context).getBoolean("hapticsEnabled", true)
@@ -31,6 +36,7 @@ object AppSettings {
 
   fun toBundle(context: Context): Bundle = Bundle().apply {
     putString("language", language(context))
+    putString("theme", theme(context))
     putBoolean("hapticsEnabled", hapticsEnabled(context))
     putBoolean("alertVibration", alertVibration(context))
     putBoolean("alertSound", alertSound(context))
@@ -40,6 +46,7 @@ object AppSettings {
   fun update(context: Context, values: Map<String, Any?>) {
     val e = prefs(context).edit()
     (values["language"] as? String)?.takeIf { it in LANGUAGES }?.let { e.putString("language", it) }
+    (values["theme"] as? String)?.takeIf { it in THEMES }?.let { e.putString("theme", it) }
     (values["hapticsEnabled"] as? Boolean)?.let { e.putBoolean("hapticsEnabled", it) }
     (values["alertVibration"] as? Boolean)?.let { e.putBoolean("alertVibration", it) }
     (values["alertSound"] as? Boolean)?.let { e.putBoolean("alertSound", it) }
