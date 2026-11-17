@@ -39,7 +39,7 @@ Semántica de acciones:
 - `reset` **desde la pantalla de bloqueo** → 0 pero **mantiene** los controles visibles (con botón ▶) para poder volver a iniciar desde ahí.
 - `reset` **no** toca el descanso (cronómetro y descanso son independientes). Desde la app, la notificación solo se quita si tampoco hay descanso en curso.
 
-### Series (solo Android, de momento)
+### Series (Android e iOS)
 
 Pestaña propia con **flujo guiado**, un solo botón principal por paso:
 1. **Configurar** (`exerciseActive=false`): series 3–6 y descanso entre series en la misma pantalla → "Empezar" (`startExercise`).
@@ -61,7 +61,7 @@ Pantalla de Ajustes (engranaje). **Viven en nativo** (`AppSettings`, `getSetting
 - **Vibración al tocar** (`hapticsEnabled`) → `Haptics.play`. **Vibración y sonido del aviso** (`alertVibration`, `alertSound`) → los pone `RestDoneAlert` tras publicar el aviso.
   - El canal del aviso es `rest_done_v2`, **sin sonido ni vibración propios** (en Android 8+ un canal no se puede cambiar desde la app una vez creado). El antiguo `rest_done` se borra.
   - El sonido es el de notificaciones del sistema (`RingtoneManager`, `USAGE_NOTIFICATION_EVENT`): respeta volumen y modo silencio.
-- iOS: solo el idioma (vibración/sonido salen como "Disponible en Android").
+- iOS: mismas claves en `UserDefaults` (`Settings` en `StopwatchEngine.swift`). La vibración al tocar solo funciona con la app en primer plano (iOS no deja vibrar en segundo plano); la del aviso, con la app abierta (`AudioServicesPlaySystemSound`); con la app cerrada el iPhone vibra con el sonido de la notificación según sus ajustes. Los textos de Ajustes lo explican (`settings.*HintIos`).
 - Iconos: `@expo/vector-icons` (Ionicons), no emojis.
 
 ### Opciones editables (duraciones y series)
@@ -70,7 +70,7 @@ El usuario puede añadir y borrar duraciones de descanso y números de series. L
 - Validación en `src/presets.ts` (y el nativo vuelve a sanear): solo enteros; descanso 5 s – 30 min con segundos 0–59; series 1–20; sin duplicados; máx. 8 por lista. El error se muestra bajo los campos solo después de escribir.
 - Por defecto: 1:00/1:30/2:00/3:00 y 3/4/5/6.
 
-### Temporizador de descanso (solo Android, de momento)
+### Temporizador de descanso (Android e iOS)
 
 Cuenta atrás entre series, **independiente** del cronómetro (se puede medir el entreno total y descansar a la vez).
 Estado nativo extra: `restEndsAt` (epoch ms, 0 = sin descanso) y `restDurationMs` (60/90/120/180 s; 90 por defecto).
@@ -80,13 +80,15 @@ Estado nativo extra: `restEndsAt` (epoch ms, 0 = sin descanso) y `restDurationMs
 - ✕ desde la notificación mantiene la notificación; cancelar desde la app la quita si el cronómetro está a 0.
 - **Vibración de confirmación** (`Haptics.kt`) en cada acción del store: 1 pulso = iniciar/descanso, 2 = pausar/cancelar descanso, largo = reiniciar. Usa `USAGE_ALARM` porque Android ignora vibraciones de "toque" de apps en segundo plano (los botones de la notificación se pulsan así).
 - Botones de la notificación: 48 dp contraída / 60 dp expandida (mínimo táctil recomendado).
-- iOS: `startRest`/`cancelRest`/`setRestDuration` (y todo lo de series) no existen en el módulo iOS; en TS son opcionales y `RestPanel` se oculta (`restSupported`).
+- iOS (`StopwatchEngine.swift`, misma lógica que `StopwatchStore.kt`): con la app suspendida no se ejecuta código, así que el aviso de fin de descanso es una **notificación local programada** al empezar el descanso (`UNTimeIntervalNotificationTrigger`, id `achro.rest_done`); el descanso vencido se limpia al leer el estado (`clearExpiredRest`) y, con la app viva, con un `DispatchWorkItem`. `ForegroundNotificationPresenter` muestra el aviso también con la app abierta.
+  - Live Activity: `ContentState` lleva `restStart/restEnd`, `series`, `sets`, `setsTarget` y `lang` (idioma ya resuelto; el widget traduce sus textos). `staleDate = restEnd` → al terminar el descanso el widget se redibuja sin la cuenta atrás. Tercer botón azul `RestButtonIntent` → `StopwatchEngine.restButton` (= `notificationRestButton`).
+  - `refreshNotification` en iOS vuelve a crear la Live Activity si hay algo en marcha (al abrir / volver a la app).
 
 ### Mapa de archivos
 
 ```
 App.tsx                         Pantalla con tres modos (pestañas): Cronómetro, Descanso y Series; SafeAreaProvider.
-                                La pestaña abierta se guarda en nativo (`mode`). iOS (sin descanso): solo el cronómetro.
+                                La pestaña abierta se guarda en nativo (`mode`).
 src/ModeTabs.tsx                Pestañas; punto de color si otro modo sigue en marcha
 src/SeriesView.tsx              Modo series: flujo guiado configurar → en serie → descansando → completado
 src/PresetPicker.tsx            Chips seleccionables + "+" (añadir) + "Editar" (borrar; no la seleccionada ni la última)
@@ -104,9 +106,9 @@ src/FixedDigits.tsx             Dígitos en celdas de ancho fijo (ver Gotcha 7)
 src/useStopwatch.ts             Hook: lee estado nativo, escucha 'onChange', refresca al volver a primer plano,
                                 pide POST_NOTIFICATIONS (Android 13+), llama refreshNotification al montar; expone `rest`
 modules/stopwatch-controls/     Módulo Expo local (Expo Modules API), nombre nativo "StopwatchControls"
-  index.ts, src/*.ts            API JS: getState(), start(), pause(), reset(), refreshNotification?() (solo Android), evento onChange
-  ios/StopwatchEngine.swift     Motor iOS: estado en UserDefaults.standard + gestión de la Live Activity (ActivityKit)
-                                + copia de StopwatchAttributes (ver "Gotchas")
+  index.ts, src/*.ts            API JS: cronómetro, descanso, series, presets, ajustes, refreshNotification; evento onChange
+  ios/StopwatchEngine.swift     Motor iOS: estado, descanso, series, presets y ajustes en UserDefaults.standard,
+                                Live Activity (ActivityKit), aviso (notificación local), Haptics + copia de StopwatchAttributes
   ios/StopwatchControlsModule.swift   Puente a JS; reenvía NotificationCenter → evento onChange
   android/.../StopwatchStore.kt        Estado en SharedPreferences + listeners
   android/.../StopwatchNotification.kt Notificación (RemoteViews con Chronometer + botones)
@@ -122,7 +124,7 @@ targets/widget/                 Widget Extension de iOS (apple-targets)
   expo-target.config.js         type widget, name StopwatchWidget, deploymentTarget 17.0
   StopwatchLiveActivity.swift   UI de la Live Activity + Dynamic Island + @main WidgetBundle
   StopwatchAttributes.swift     Copia del struct de atributos para el widget
-  _shared/StopwatchIntents.swift  LiveActivityIntents (Toggle / Reset); se compila en app Y widget
+  _shared/StopwatchIntents.swift  LiveActivityIntents (Toggle / Reset / RestButton); se compila en app Y widget
 ```
 
 ### iOS en detalle
@@ -193,14 +195,13 @@ adb shell am start -a android.intent.action.VIEW \
 ## Estado de verificación
 
 - ✅ iOS compila (app + widget) y la app corre en el simulador.
-- ⚠️ iOS: **la Live Activity y sus botones no se han probado** en simulador ni dispositivo (no se pudo interactuar con el simulador). Pendiente de prueba manual: Iniciar → ⌘L → probar ▶/⏸/↺.
+- ⚠️ iOS: **la Live Activity y sus botones no se han probado** en simulador ni dispositivo (no se pudo interactuar con el simulador). Descanso/Series/Ajustes en iOS compilan y las pestañas aparecen, pero falta prueba manual: Iniciar → ⌘L → ▶/⏸/↺ y el botón azul; descanso → aviso.
+- Si en el simulador sale "Cannot find native module 'ExpoLocalization'": hay una instalación vieja `com.cronometro.app` que también registra `exp+cronometro://` y abre el deep link → `xcrun simctl uninstall booted com.cronometro.app`.
 - ⚠️ iOS en dispositivo real requiere configurar el equipo de firma (`ios.appleTeamId` en `app.json` o en Xcode) para app y widget.
 - ✅ Android probado en el Moto g55: la notificación muestra el tiempo y los botones Pausar → Reiniciar → Iniciar funcionan; la app se mantiene sincronizada.
 
 ## Ideas / pendientes
 
-- Descanso en iOS (Live Activity con `Text(timerInterval:countsDown:)` + notificación local al terminar).
-- Vibración también en iOS.
 - Series: rutinas guardadas (ejercicios con nombre, series y descanso propios) e historial del entreno.
 - Vueltas (laps).
 - Cambiar `slug` a `achro` si se quiere que el deep link deje de decir `cronometro`.

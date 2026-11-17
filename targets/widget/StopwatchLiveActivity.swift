@@ -10,96 +10,191 @@ struct StopwatchWidgetBundle: WidgetBundle {
   }
 }
 
+private let restBlue = Color(red: 10 / 255, green: 132 / 255, blue: 1)
+private let startGreen = Color(red: 48 / 255, green: 209 / 255, blue: 88 / 255)
+private let pauseOrange = Color(red: 1, green: 159 / 255, blue: 10 / 255)
+
 struct StopwatchLiveActivity: Widget {
   var body: some WidgetConfiguration {
     ActivityConfiguration(for: StopwatchAttributes.self) { context in
-      LockScreenView(state: context.state)
+      LockScreenView(m: Model(context.state, stale: context.isStale))
         .activityBackgroundTint(Color.black.opacity(0.85))
         .activitySystemActionForegroundColor(.white)
     } dynamicIsland: { context in
-      DynamicIsland {
+      let m = Model(context.state, stale: context.isStale)
+      return DynamicIsland {
         DynamicIslandExpandedRegion(.leading) {
-          Label("Cronómetro", systemImage: "stopwatch")
+          Label(m.status, systemImage: m.resting ? "hourglass" : "stopwatch")
             .font(.caption)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(m.resting ? restBlue : .secondary)
             .padding(.leading, 4)
+        }
+        DynamicIslandExpandedRegion(.trailing) {
+          if m.resting { RestCountdown(m: m).font(.caption.weight(.semibold)).padding(.trailing, 4) }
         }
         DynamicIslandExpandedRegion(.bottom) {
           HStack(alignment: .center) {
-            TimeText(state: context.state)
-              .font(.system(size: 40, weight: .semibold, design: .rounded))
+            MainText(m: m)
+              .font(.system(size: 36, weight: .semibold, design: .rounded))
               .monospacedDigit()
             Spacer()
-            ControlButtons(state: context.state)
+            ControlButtons(m: m)
           }
           .padding(.horizontal, 4)
         }
       } compactLeading: {
-        Image(systemName: context.state.isRunning ? "stopwatch" : "pause.circle")
-          .foregroundStyle(Color.accentColor)
+        Image(systemName: m.resting ? "hourglass" : (m.state.isRunning ? "stopwatch" : "pause.circle"))
+          .foregroundStyle(m.resting ? restBlue : Color.accentColor)
       } compactTrailing: {
-        TimeText(state: context.state)
-          .monospacedDigit()
-          .frame(maxWidth: 56)
+        Group {
+          if m.resting { RestCountdown(m: m) } else { MainText(m: m) }
+        }
+        .monospacedDigit()
+        .frame(maxWidth: 56)
       } minimal: {
-        Image(systemName: "stopwatch")
-          .foregroundStyle(Color.accentColor)
+        Image(systemName: m.resting ? "hourglass" : "stopwatch")
+          .foregroundStyle(m.resting ? restBlue : Color.accentColor)
       }
     }
+  }
+}
+
+// MARK: - Modelo (misma lógica que la notificación de Android)
+
+private struct Model {
+  let state: StopwatchAttributes.ContentState
+  /// El descanso terminó (staleDate = fin del descanso) o su hora ya pasó.
+  let resting: Bool
+
+  init(_ state: StopwatchAttributes.ContentState, stale: Bool) {
+    self.state = state
+    if let end = state.restEnd, !stale, end > Date() { resting = true } else { resting = false }
+  }
+
+  var es: Bool { state.lang == "es" }
+  var stopwatchUsed: Bool { state.isRunning || state.elapsed > 0 }
+  var exerciseDone: Bool { state.sets >= state.setsTarget }
+  /// Con un ejercicio en marcha y el cronómetro sin usar, la línea grande muestra "2/4".
+  var showProgress: Bool { state.series && !stopwatchUsed }
+  var progress: String { "\(min(state.sets + 1, state.setsTarget))/\(state.setsTarget)" }
+
+  var status: String {
+    if resting { return es ? "Descanso" : "Rest" }
+    if state.series && exerciseDone {
+      let done = es ? "Completado" : "Done"
+      return showProgress ? done : "\(done) \(progress)"
+    }
+    if state.series {
+      let set = es ? "Serie" : "Set"
+      return showProgress ? set : "\(set) \(progress)"
+    }
+    if state.isRunning { return es ? "En marcha" : "Running" }
+    return state.elapsed > 0 ? (es ? "En pausa" : "Paused") : (es ? "Detenido" : "Stopped")
+  }
+
+  /// Icono y etiqueta del botón azul (ver `StopwatchEngine.restButton`).
+  var restButton: (icon: String, label: String) {
+    if resting { return ("xmark", es ? "Saltar descanso" : "Skip rest") }
+    if state.series && exerciseDone { return ("forward.end.fill", es ? "Siguiente ejercicio" : "Next exercise") }
+    if state.series {
+      return ("checkmark", es ? "Terminé la serie \(state.sets + 1)" : "Finished set \(state.sets + 1)")
+    }
+    return ("hourglass", es ? "Descansar" : "Rest")
   }
 }
 
 // MARK: - Vistas
 
 private struct LockScreenView: View {
-  let state: StopwatchAttributes.ContentState
+  let m: Model
 
   var body: some View {
-    HStack(alignment: .center, spacing: 12) {
+    HStack(alignment: .center, spacing: 10) {
       VStack(alignment: .leading, spacing: 2) {
-        Label(statusLabel, systemImage: "stopwatch")
-          .font(.caption)
-          .foregroundStyle(.white.opacity(0.7))
-        TimeText(state: state)
-          .font(.system(size: 44, weight: .semibold, design: .rounded))
+        HStack(spacing: 8) {
+          Label(m.status, systemImage: m.resting ? "hourglass" : "stopwatch")
+            .font(.caption)
+            .foregroundStyle(m.resting ? restBlue : .white.opacity(0.7))
+          if m.resting {
+            RestCountdown(m: m)
+              .font(.caption.weight(.semibold))
+              .foregroundStyle(restBlue)
+          }
+        }
+        MainText(m: m)
+          .font(.system(size: 40, weight: .semibold, design: .rounded))
           .monospacedDigit()
           .foregroundStyle(.white)
+          .lineLimit(1)
+          .minimumScaleFactor(0.6)
       }
-      Spacer()
-      ControlButtons(state: state)
+      Spacer(minLength: 0)
+      ControlButtons(m: m)
     }
     .padding(16)
-  }
-
-  private var statusLabel: String {
-    if state.isRunning { return "En marcha" }
-    return state.elapsed > 0 ? "En pausa" : "Detenido"
   }
 }
 
 private struct ControlButtons: View {
-  let state: StopwatchAttributes.ContentState
+  let m: Model
 
   var body: some View {
-    HStack(spacing: 10) {
-      Button(intent: ResetStopwatchIntent()) {
-        Image(systemName: "arrow.counterclockwise")
-          .font(.title3.weight(.semibold))
-          .frame(width: 48, height: 48)
-          .background(Circle().fill(Color.white.opacity(0.18)))
-          .foregroundStyle(.white)
+    HStack(spacing: 8) {
+      if m.stopwatchUsed {
+        Button(intent: ResetStopwatchIntent()) {
+          circle("arrow.counterclockwise", fill: Color.white.opacity(0.18), fg: .white)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(m.es ? "Reiniciar cronómetro" : "Reset stopwatch")
       }
-      .buttonStyle(.plain)
-      .disabled(!state.isRunning && state.elapsed == 0)
 
       Button(intent: ToggleStopwatchIntent()) {
-        Image(systemName: state.isRunning ? "pause.fill" : "play.fill")
-          .font(.title3.weight(.semibold))
-          .frame(width: 48, height: 48)
-          .background(Circle().fill(state.isRunning ? Color.orange : Color.green))
-          .foregroundStyle(.black)
+        circle(m.state.isRunning ? "pause.fill" : "play.fill", fill: m.state.isRunning ? pauseOrange : startGreen, fg: .black)
       }
       .buttonStyle(.plain)
+      .accessibilityLabel(m.state.isRunning ? (m.es ? "Pausar" : "Pause") : (m.es ? "Iniciar" : "Start"))
+
+      Button(intent: RestButtonIntent()) {
+        circle(m.restButton.icon, fill: m.resting ? restBlue : restBlue.opacity(0.3), fg: m.resting ? .white : restBlue)
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel(m.restButton.label)
+    }
+  }
+
+  private func circle(_ icon: String, fill: Color, fg: Color) -> some View {
+    Image(systemName: icon)
+      .font(.title3.weight(.semibold))
+      .frame(width: 46, height: 46)
+      .background(Circle().fill(fill))
+      .foregroundStyle(fg)
+  }
+}
+
+/// Línea grande: el tiempo del cronómetro o, con un ejercicio sin cronómetro, el progreso.
+private struct MainText: View {
+  let m: Model
+
+  var body: some View {
+    if m.showProgress {
+      Text(m.progress)
+    } else {
+      TimeText(state: m.state)
+    }
+  }
+}
+
+/// Cuenta atrás del descanso; la anima el sistema sin despertar la app.
+private struct RestCountdown: View {
+  let m: Model
+
+  var body: some View {
+    if let start = m.state.restStart, let end = m.state.restEnd, m.resting {
+      Text(timerInterval: start...end, countsDown: true)
+        .monospacedDigit()
+        .multilineTextAlignment(.trailing)
+        .frame(maxWidth: 56, alignment: .leading)
+        .foregroundStyle(restBlue)
     }
   }
 }

@@ -4,17 +4,17 @@ export type StopwatchState = {
   startedAt: number;
   /** Milisegundos acumulados de tandas anteriores. */
   accumulatedMs: number;
-  /** Epoch (ms) en que termina el descanso en curso; 0 = sin descanso. Solo Android (de momento). */
+  /** Epoch (ms) en que termina el descanso en curso; 0 = sin descanso. */
   restEndsAt?: number;
-  /** Duración elegida para los descansos. Solo Android (de momento). */
+  /** Duración elegida para los descansos. */
   restDurationMs?: number;
-  /** Hay un ejercicio en marcha en la pestaña Series (false = configurando). Solo Android. */
+  /** Hay un ejercicio en marcha en la pestaña Series (false = configurando). */
   exerciseActive?: boolean;
-  /** Series hechas del ejercicio actual. Solo Android (de momento). */
+  /** Series hechas del ejercicio actual. */
   sets?: number;
-  /** Series objetivo del ejercicio. Solo Android (de momento). */
+  /** Series objetivo del ejercicio. */
   setsTarget?: number;
-  /** Pestaña abierta; decide qué hace el botón ⏳/✓ de la notificación. Solo Android. */
+  /** Pestaña abierta; decide qué hace el botón ⏳/✓ de la notificación. */
   mode?: AppMode;
 };
 

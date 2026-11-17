@@ -7,23 +7,23 @@ declare class StopwatchControlsModule extends NativeModule<StopwatchControlsEven
   start(): Promise<StopwatchState>;
   pause(): Promise<StopwatchState>;
   reset(): Promise<StopwatchState>;
-  /** Solo Android. */
+  /** Vuelve a mostrar la notificación / Live Activity si hay algo en marcha. */
   refreshNotification?(): void;
-  /** Temporizador de descanso. Solo Android (de momento). */
+  /** Temporizador de descanso. */
   startRest?(): Promise<StopwatchState>;
   cancelRest?(): Promise<StopwatchState>;
   setRestDuration?(ms: number): Promise<StopwatchState>;
-  /** Series. Solo Android (de momento). */
+  /** Series. */
   startExercise?(): Promise<StopwatchState>;
   completeSet?(): Promise<StopwatchState>;
   undoSet?(): Promise<StopwatchState>;
   endExercise?(): Promise<StopwatchState>;
   setSetsTarget?(target: number): Promise<StopwatchState>;
   setMode?(mode: AppMode): Promise<StopwatchState>;
-  /** Listas editables. Solo Android (de momento). */
+  /** Listas editables. */
   getPresets?(): Presets;
   setPresets?(rest: number[], sets: number[]): Promise<Presets>;
-  /** Ajustes. Solo Android (de momento). */
+  /** Ajustes. */
   getSettings?(): AppSettings;
   setSettings?(patch: Partial<AppSettings>): Promise<AppSettings>;
 }

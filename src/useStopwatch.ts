@@ -15,7 +15,7 @@ export function restRemainingMs(s: StopwatchState, now = Date.now()) {
 const DEFAULT_SETS_TARGET = 4;
 const DEFAULT_REST_MS = 90_000;
 
-/** El temporizador de descanso solo está implementado en Android (de momento). */
+/** Descanso y series existen en el módulo nativo (Android e iOS). */
 export const restSupported = typeof StopwatchControls.startRest === 'function';
 
 async function ensureAndroidNotificationPermission() {

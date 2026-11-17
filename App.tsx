@@ -100,7 +100,7 @@ function Screen() {
           )}
         </>
       ) : (
-        // iOS (todavía sin descanso): solo el cronómetro.
+        // Módulo nativo sin descanso (build antiguo): solo el cronómetro.
         <>
           <View style={[styles.header, styles.headerEnd]}>{gear}</View>
           {stopwatch}

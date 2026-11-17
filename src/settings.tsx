@@ -19,7 +19,7 @@ type Ctx = {
   /** Idioma del teléfono, ya reducido a es/en. */
   systemLang: Lang;
   t: T;
-  /** Vibración y sonido solo existen en nativo Android (de momento). */
+  /** El nativo guarda los ajustes (Android e iOS). */
   nativeSettings: boolean;
 };
 

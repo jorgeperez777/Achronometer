@@ -8,6 +8,12 @@ struct StopwatchAttributes: ActivityAttributes {
     var isRunning: Bool
     var startDate: Date
     var elapsed: Double
+    var restStart: Date?
+    var restEnd: Date?
+    var series: Bool
+    var sets: Int
+    var setsTarget: Int
+    var lang: String
   }
 
   var title: String

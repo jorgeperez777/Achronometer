@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
 import type { LanguageSetting } from '../modules/stopwatch-controls';
 import { LANGUAGE_NAMES } from './i18n';
@@ -58,14 +58,14 @@ export function SettingsView({ onClose }: { onClose: () => void }) {
         <Section title={t('settings.vibration')} footer={nativeSettings ? undefined : t('settings.androidOnly')}>
           <SwitchRow
             label={t('settings.vibTouch')}
-            hint={t('settings.vibTouchHint')}
+            hint={t(Platform.OS === 'ios' ? 'settings.vibTouchHintIos' : 'settings.vibTouchHint')}
             value={settings.hapticsEnabled}
             onChange={(v) => update({ hapticsEnabled: v })}
             disabled={!nativeSettings}
           />
           <SwitchRow
             label={t('settings.vibAlert')}
-            hint={t('settings.vibAlertHint')}
+            hint={t(Platform.OS === 'ios' ? 'settings.vibAlertHintIos' : 'settings.vibAlertHint')}
             value={settings.alertVibration}
             onChange={(v) => update({ alertVibration: v })}
             disabled={!nativeSettings}
