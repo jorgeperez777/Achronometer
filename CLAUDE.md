@@ -150,6 +150,14 @@ targets/widget/                 Widget Extension de iOS (apple-targets)
 - Permiso `POST_NOTIFICATIONS` declarado en el manifest del módulo; se pide desde JS con `PermissionsAndroid` al pulsar Iniciar.
 - Dependencia `androidx.core:core:1.13.1` en `modules/stopwatch-controls/android/build.gradle`.
 
+## Icono y pantalla de inicio
+
+Logo original: `assets/logo-ac.png` (monograma "AC" blanco sobre negro, 1254 px). El resto se genera de él con ImageMagick (transparencia = brillo del píxel):
+- `icon.png` (iOS, 1024, fondo negro sin alfa), `favicon.png`.
+- `android-icon-foreground.png` / `-monochrome.png`: logo blanco sobre transparente a ~57 % del ancho, dentro de la zona segura del icono adaptativo; fondo `#000000` como color (`adaptiveIcon.backgroundColor`).
+- `splash-icon.png` (transparente) → plugin `expo-splash-screen` con fondo negro.
+Tras cambiar cualquiera: `npx expo prebuild --clean` y recompilar.
+
 ## Gotchas (importantes)
 
 1. **`StopwatchAttributes` está duplicado** en `modules/stopwatch-controls/ios/StopwatchEngine.swift` y `targets/widget/StopwatchAttributes.swift`. ActivityKit los empareja por nombre: **deben tener exactamente el mismo nombre y campos**. Si cambias uno, cambia el otro o la Live Activity deja de renderizar.
@@ -208,5 +216,4 @@ adb shell am start -a android.intent.action.VIEW \
 - Series: rutinas guardadas (ejercicios con nombre, series y descanso propios) e historial del entreno.
 - Vueltas (laps).
 - Cambiar `slug` a `achro` si se quiere que el deep link deje de decir `cronometro`.
-- Icono propio de la app (sigue el del template de Expo).
 - Probar comportamiento tras >8 h (límite de duración de Live Activities en iOS).
