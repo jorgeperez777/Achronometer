@@ -55,11 +55,9 @@ object StopwatchNotification {
     val resting = restRemaining > 0
     // Cuenta atrás: base = ahora + lo que queda.
     val restBase = SystemClock.elapsedRealtime() + restRemaining
-    // Durante el descanso: "Descanso" + cuenta atrás. Si no, la serie en curso (si se están
-    // contando series) o el estado del cronómetro.
+    // Durante el descanso: "Descanso" + cuenta atrás. Si no, el estado del cronómetro.
     val status = when {
       resting -> "Descanso"
-      state.sets > 0 -> "Serie ${state.sets + 1}"
       state.isRunning -> "En marcha"
       elapsed > 0 -> "En pausa"
       else -> "Detenido"

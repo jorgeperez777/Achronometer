@@ -77,12 +77,6 @@ export function useStopwatch() {
   const cancelRest = useCallback(async () => {
     if (StopwatchControls.cancelRest) setState(await StopwatchControls.cancelRest());
   }, []);
-  const addSets = useCallback(async (delta: number) => {
-    if (StopwatchControls.addSets) setState(await StopwatchControls.addSets(delta));
-  }, []);
-  const resetSets = useCallback(async () => {
-    if (StopwatchControls.resetSets) setState(await StopwatchControls.resetSets());
-  }, []);
   const setRestDuration = useCallback(async (ms: number) => {
     if (StopwatchControls.setRestDuration) setState(await StopwatchControls.setRestDuration(ms));
   }, []);
@@ -100,12 +94,6 @@ export function useStopwatch() {
       start: startRest,
       cancel: cancelRest,
       setDuration: setRestDuration,
-    },
-    sets: {
-      supported: restSupported,
-      count: state.sets ?? 0,
-      add: addSets,
-      reset: resetSets,
     },
   };
 }
