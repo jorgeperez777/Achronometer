@@ -95,19 +95,14 @@ object StopwatchStore {
     if (get(context).isRunning) pause(context) else start(context)
 
   /**
-   * Pone el cronómetro a 0 y cancela el descanso.
+   * Pone el cronómetro a 0. **No toca el descanso**: son independientes.
    * @param keepNotification true desde la pantalla de bloqueo (para poder volver a iniciar);
-   * false desde la app (se quita la notificación).
+   * false desde la app (se quita la notificación, salvo que haya un descanso en curso).
    */
   fun reset(context: Context, keepNotification: Boolean): StopwatchState {
-    RestAlarm.cancel(context)
     Haptics.play(context, Haptics.Kind.RESET)
     val s = get(context)
-    return commit(
-      context,
-      StopwatchState(false, 0.0, 0.0, restEndsAt = 0.0, restDurationMs = s.restDurationMs),
-      keepNotification,
-    )
+    return commit(context, s.copy(isRunning = false, startedAt = 0.0, accumulatedMs = 0.0), keepNotification)
   }
 
   // MARK: - Descanso

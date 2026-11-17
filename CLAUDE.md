@@ -37,7 +37,7 @@ Semántica de acciones:
 - `start` = iniciar o reanudar. `pause` = acumula y detiene. `toggle` = start/pause.
 - `reset` **desde la app** → 0 y **quita** la Live Activity/notificación.
 - `reset` **desde la pantalla de bloqueo** → 0 pero **mantiene** los controles visibles (con botón ▶) para poder volver a iniciar desde ahí.
-- `reset` también cancela el descanso en curso.
+- `reset` **no** toca el descanso (cronómetro y descanso son independientes). Desde la app, la notificación solo se quita si tampoco hay descanso en curso.
 
 ### Temporizador de descanso (solo Android, de momento)
 
