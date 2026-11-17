@@ -14,6 +14,7 @@ export const colors = {
   pauseBg: '#332005',
   rest: '#0A84FF',
   restBg: '#0A2440',
+  danger: '#FF453A', // errores de validación (5.2:1 sobre surface)
 } as const;
 
 export const space = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 } as const;

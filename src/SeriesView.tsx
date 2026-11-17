@@ -2,9 +2,9 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ModeLayout } from './ModeLayout';
-import { Segmented } from './Segmented';
+import { PresetPicker } from './PresetPicker';
+import { formatDuration, speakDuration } from './presets';
 import { colors, pressedStyle, radius, space } from './theme';
-import { REST_PRESETS_MS, SETS_TARGET_OPTIONS } from './useStopwatch';
 
 function formatCountdown(ms: number) {
   const total = Math.ceil(ms / 1000);
@@ -24,6 +24,10 @@ type Props = {
   skipRest: () => void;
   setTarget: (t: number) => void;
   setRestDuration: (ms: number) => void;
+  setsOptions: number[];
+  setSetsOptions: (options: number[]) => void;
+  restOptions: number[];
+  setRestOptions: (options: number[]) => void;
 };
 
 /**
@@ -47,23 +51,30 @@ export function SeriesView(p: Props) {
             <Text style={styles.title}>Nuevo ejercicio</Text>
             <Text style={styles.hint}>Elige cuántas series vas a hacer y cuánto descansas entre ellas.</Text>
 
-            <Text style={[styles.label, styles.fieldLabel]}>Series</Text>
-            <Segmented
-              options={SETS_TARGET_OPTIONS}
-              value={p.target}
-              onChange={p.setTarget}
-              label={(t) => String(t)}
-              a11yLabel={(t) => `${t} series`}
-            />
-
-            <Text style={[styles.label, styles.fieldLabel]}>Descanso entre series</Text>
-            <Segmented
-              options={REST_PRESETS_MS}
-              value={p.restDurationMs}
-              onChange={p.setRestDuration}
-              label={formatCountdown}
-              a11yLabel={(ms) => `${ms / 1000} segundos`}
-            />
+            <View style={styles.field}>
+              <PresetPicker
+                title="Series"
+                kind="sets"
+                options={p.setsOptions}
+                value={p.target}
+                onSelect={p.setTarget}
+                onChangeOptions={p.setSetsOptions}
+                format={(n) => String(n)}
+                speak={(n) => `${n} ${n === 1 ? 'serie' : 'series'}`}
+              />
+            </View>
+            <View style={styles.field}>
+              <PresetPicker
+                title="Descanso entre series"
+                kind="rest"
+                options={p.restOptions}
+                value={p.restDurationMs}
+                onSelect={p.setRestDuration}
+                onChangeOptions={p.setRestOptions}
+                format={formatDuration}
+                speak={speakDuration}
+              />
+            </View>
           </>
         }
         controls={<Primary label="Empezar" a11y={`Empezar ejercicio de ${p.target} series`} onPress={p.start} />}
@@ -203,7 +214,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
-  fieldLabel: { alignSelf: 'flex-start', marginTop: space.xl, marginBottom: space.sm },
+  field: { alignSelf: 'stretch', marginTop: space.xl },
   huge: { color: colors.text, fontSize: 104, fontWeight: '200', lineHeight: 116, fontVariant: ['tabular-nums'] },
   sub: { color: colors.textMuted, fontSize: 18 },
   summary: { color: colors.textMuted, fontSize: 14, marginTop: space.lg, fontVariant: ['tabular-nums'] },

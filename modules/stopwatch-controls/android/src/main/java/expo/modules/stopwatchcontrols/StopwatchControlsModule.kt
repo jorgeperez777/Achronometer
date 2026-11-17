@@ -41,6 +41,21 @@ class StopwatchControlsModule : Module() {
       StopwatchStore.setMode(context, m).toBundle()
     }
 
+    /** Listas editables de duraciones de descanso (ms) y de series. */
+    Function("getPresets") {
+      mapOf(
+        "rest" to StopwatchStore.getRestPresets(context).map { it.toDouble() },
+        "sets" to StopwatchStore.getSetsPresets(context),
+      )
+    }
+    AsyncFunction("setPresets") { rest: List<Double>, sets: List<Int> ->
+      StopwatchStore.setPresets(context, rest.map { it.toLong() }, sets)
+      mapOf(
+        "rest" to StopwatchStore.getRestPresets(context).map { it.toDouble() },
+        "sets" to StopwatchStore.getSetsPresets(context),
+      )
+    }
+
     /** Vuelve a publicar la notificación (p. ej. después de conceder el permiso o reiniciar el teléfono). */
     Function("refreshNotification") {
       val s = StopwatchStore.clearExpiredRest(context)

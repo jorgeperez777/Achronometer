@@ -53,8 +53,12 @@ function Screen() {
           {mode === 'series' && (
             <SeriesView
               {...series}
+              setsOptions={series.options}
+              setSetsOptions={series.setOptions}
               restDurationMs={rest.durationMs}
               setRestDuration={rest.setDuration}
+              restOptions={rest.options}
+              setRestOptions={rest.setOptions}
               skipRest={rest.cancel}
             />
           )}

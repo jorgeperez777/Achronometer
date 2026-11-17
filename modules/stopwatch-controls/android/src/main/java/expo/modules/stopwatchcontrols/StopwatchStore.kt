@@ -196,7 +196,7 @@ object StopwatchStore {
   }
 
   fun setRestDuration(context: Context, ms: Long): StopwatchState =
-    update(context, get(context).copy(restDurationMs = ms.coerceIn(5_000L, 30 * 60_000L).toDouble()))
+    update(context, get(context).copy(restDurationMs = ms.coerceIn(MIN_REST_MS, MAX_REST_MS).toDouble()))
 
   /** Limpia un descanso cuya alarma se perdió (p. ej. tras reiniciar el teléfono). */
   fun clearExpiredRest(context: Context): StopwatchState {
@@ -264,7 +264,38 @@ object StopwatchStore {
   fun setSetsTarget(context: Context, target: Int): StopwatchState {
     val s = get(context)
     // No se puede bajar por debajo de las ya hechas.
-    return update(context, s.copy(setsTarget = target.coerceIn(maxOf(1, s.sets), 20)))
+    return update(context, s.copy(setsTarget = target.coerceIn(maxOf(MIN_SETS, s.sets), MAX_SETS)))
+  }
+
+  // MARK: - Opciones editables (listas de descansos y de series)
+
+  val DEFAULT_REST_PRESETS = listOf(60_000L, 90_000L, 120_000L, 180_000L)
+  val DEFAULT_SETS_PRESETS = listOf(3, 4, 5, 6)
+  const val MAX_PRESETS = 8
+  const val MIN_REST_MS = 5_000L
+  const val MAX_REST_MS = 30 * 60_000L
+  const val MIN_SETS = 1
+  const val MAX_SETS = 20
+
+  private fun parseList(raw: String?): List<Long>? =
+    raw?.split(",")?.mapNotNull { it.trim().toLongOrNull() }?.takeIf { it.isNotEmpty() }
+
+  fun getRestPresets(context: Context): List<Long> =
+    parseList(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("restPresets", null))
+      ?: DEFAULT_REST_PRESETS
+
+  fun getSetsPresets(context: Context): List<Int> =
+    parseList(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("setsPresets", null))
+      ?.map { it.toInt() } ?: DEFAULT_SETS_PRESETS
+
+  /** Guarda las listas ya validadas por la app; aquí solo se sanea (rango, duplicados, orden, tope). */
+  fun setPresets(context: Context, rest: List<Long>, sets: List<Int>) {
+    val r = rest.filter { it in MIN_REST_MS..MAX_REST_MS }.distinct().sorted().take(MAX_PRESETS)
+    val st = sets.filter { it in MIN_SETS..MAX_SETS }.distinct().sorted().take(MAX_PRESETS)
+    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+      .putString("restPresets", (r.ifEmpty { DEFAULT_REST_PRESETS }).joinToString(","))
+      .putString("setsPresets", (st.ifEmpty { DEFAULT_SETS_PRESETS }).joinToString(","))
+      .commit()
   }
 
   /** La app avisa de qué pestaña está abierta. */

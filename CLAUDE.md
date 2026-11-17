@@ -52,6 +52,12 @@ Estado nativo: `exerciseActive`, `sets`, `setsTarget` (se recorta `sets` al leer
 - Con `seriesControls` la notificación se muestra siempre; si el cronómetro no se usa, la línea grande muestra el progreso ("2/3", `stopwatch_title`) en vez de 00:00.
 - Series, descanso y cronómetro son independientes: `reset` no toca las series.
 
+### Opciones editables (duraciones y series)
+
+El usuario puede añadir y borrar duraciones de descanso y números de series. Listas en nativo (`restPresets`/`setsPresets` en SharedPreferences, `getPresets`/`setPresets`), compartidas por las pestañas Descanso y Series.
+- Validación en `src/presets.ts` (y el nativo vuelve a sanear): solo enteros; descanso 5 s – 30 min con segundos 0–59; series 1–20; sin duplicados; máx. 8 por lista. El error se muestra bajo los campos solo después de escribir.
+- Por defecto: 1:00/1:30/2:00/3:00 y 3/4/5/6.
+
 ### Temporizador de descanso (solo Android, de momento)
 
 Cuenta atrás entre series, **independiente** del cronómetro (se puede medir el entreno total y descansar a la vez).
@@ -71,7 +77,9 @@ App.tsx                         Pantalla con tres modos (pestañas): Cronómetro
                                 La pestaña abierta se guarda en nativo (`mode`). iOS (sin descanso): solo el cronómetro.
 src/ModeTabs.tsx                Pestañas; punto de color si otro modo sigue en marcha
 src/SeriesView.tsx              Modo series: flujo guiado configurar → en serie → descansando → completado
-src/Segmented.tsx               Selector segmentado compartido (series, duraciones)
+src/PresetPicker.tsx            Chips seleccionables + "+" (añadir) + "Editar" (borrar; no la seleccionada ni la última)
+src/AddPresetSheet.tsx          Hoja para añadir una opción: campos numéricos, validación en vivo, "Añadir" desactivado si no es válido
+src/presets.ts                  Listas por defecto, límites y validación pura (validateRest / validateSets)
 src/ModeLayout.tsx              Esqueleto común: número grande centrado + controles abajo a la misma altura en ambos modos
 src/StopwatchView.tsx           Modo cronómetro: tiempo con centésimas + Reiniciar / Iniciar·Pausar
 src/RestView.tsx                Modo descanso: duración que se convierte en cuenta atrás en el mismo sitio,

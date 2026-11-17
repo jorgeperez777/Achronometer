@@ -20,6 +20,9 @@ export type StopwatchState = {
 
 export type AppMode = 'stopwatch' | 'rest' | 'series';
 
+/** Listas editables por el usuario: duraciones de descanso (ms) y número de series. */
+export type Presets = { rest: number[]; sets: number[] };
+
 export type StopwatchControlsEvents = {
   onChange: (state: StopwatchState) => void;
 };

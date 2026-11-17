@@ -2,9 +2,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { FixedDigits } from './FixedDigits';
 import { ModeLayout } from './ModeLayout';
-import { Segmented } from './Segmented';
+import { PresetPicker } from './PresetPicker';
+import { formatDuration, speakDuration } from './presets';
 import { colors, pressedStyle, radius, space } from './theme';
-import { REST_PRESETS_MS } from './useStopwatch';
 
 /** m:ss redondeando hacia arriba (una cuenta atrás no debe mostrar 0:00 mientras queda tiempo). */
 function formatCountdown(ms: number) {
@@ -18,13 +18,15 @@ type Props = {
   start: () => void;
   cancel: () => void;
   setDuration: (ms: number) => void;
+  options: number[];
+  setOptions: (options: number[]) => void;
 };
 
 /**
  * Modo descanso: la duración elegida, que se convierte en la cuenta atrás en el mismo sitio,
  * el selector de duración y un solo botón.
  */
-export function RestView({ remaining, durationMs, start, cancel, setDuration }: Props) {
+export function RestView({ remaining, durationMs, start, cancel, setDuration, options, setOptions }: Props) {
   const resting = remaining > 0;
 
   return (
@@ -40,12 +42,15 @@ export function RestView({ remaining, durationMs, start, cancel, setDuration }: 
           />
 
           <View style={styles.selector}>
-            <Segmented
-              options={REST_PRESETS_MS}
+            <PresetPicker
+              title="Duración"
+              kind="rest"
+              options={options}
               value={durationMs}
-              onChange={setDuration}
-              label={formatCountdown}
-              a11yLabel={(ms) => `${ms / 1000} segundos`}
+              onSelect={setDuration}
+              onChangeOptions={setOptions}
+              format={formatDuration}
+              speak={speakDuration}
               disabled={resting}
             />
           </View>

@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, PermissionsAndroid, Platform } from 'react-native';
 
-import StopwatchControls, { type AppMode, type StopwatchState } from '../modules/stopwatch-controls';
+import StopwatchControls, { type AppMode, type Presets, type StopwatchState } from '../modules/stopwatch-controls';
+import { DEFAULT_REST_PRESETS_MS, DEFAULT_SETS_PRESETS } from './presets';
 
 export function elapsedMs(s: StopwatchState, now = Date.now()) {
   return s.accumulatedMs + (s.isRunning ? Math.max(0, now - s.startedAt) : 0);
@@ -11,12 +12,7 @@ export function restRemainingMs(s: StopwatchState, now = Date.now()) {
   return s.restEndsAt ? Math.max(0, s.restEndsAt - now) : 0;
 }
 
-/** Objetivos de series que ofrece la app. */
-export const SETS_TARGET_OPTIONS = [3, 4, 5, 6];
 const DEFAULT_SETS_TARGET = 4;
-
-/** Duraciones de descanso que ofrece la app. */
-export const REST_PRESETS_MS = [60_000, 90_000, 120_000, 180_000];
 const DEFAULT_REST_MS = 90_000;
 
 /** El temporizador de descanso solo está implementado en Android (de momento). */
@@ -112,6 +108,19 @@ export function useStopwatch() {
     if (StopwatchControls.setSetsTarget) setState(await StopwatchControls.setSetsTarget(t));
   }, []);
 
+  // Listas editables (duraciones y series). Viven en nativo; aquí se reflejan.
+  const [presets, setPresetsState] = useState<Presets>(
+    () => StopwatchControls.getPresets?.() ?? { rest: DEFAULT_REST_PRESETS_MS, sets: DEFAULT_SETS_PRESETS },
+  );
+  const savePresets = useCallback(async (next: Presets) => {
+    setPresetsState(next); // optimista
+    if (StopwatchControls.setPresets) setPresetsState(await StopwatchControls.setPresets(next.rest, next.sets));
+  }, []);
+  const presetsRef = useRef(presets);
+  presetsRef.current = presets;
+  const setRestPresets = useCallback((rest: number[]) => savePresets({ ...presetsRef.current, rest }), [savePresets]);
+  const setSetsPresets = useCallback((sets: number[]) => savePresets({ ...presetsRef.current, sets }), [savePresets]);
+
   const setRestDuration = useCallback(async (ms: number) => {
     if (StopwatchControls.setRestDuration) setState(await StopwatchControls.setRestDuration(ms));
   }, []);
@@ -135,6 +144,8 @@ export function useStopwatch() {
       undo: undoSet,
       end: endExercise,
       setTarget: setSetsTarget,
+      options: presets.sets,
+      setOptions: setSetsPresets,
     },
     rest: {
       supported: restSupported,
@@ -143,6 +154,8 @@ export function useStopwatch() {
       start: startRest,
       cancel: cancelRest,
       setDuration: setRestDuration,
+      options: presets.rest,
+      setOptions: setRestPresets,
     },
   };
 }
